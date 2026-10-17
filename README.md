@@ -2,9 +2,11 @@
 
 **Use AI to get your United States of America (US) taxes right, and see your estimate before you pay.** For single filers, married couples, and anyone with an LLC, several LLCs, or 1099 side work.
 
-**Tax years:** 2024, 2025 and 2026, tested on real 2024 returns. Each year's figures live in one table, so the rest works the same any year. Upcoming: **2027** (filing by April 15, 2028, a Saturday, so the IRS will set the exact date), available May 1, 2027.
+**Tax years:** 2024, 2025 and 2026, tested on real 2024 and 2025 returns. Each year's figures live in one table, so the rest works the same any year. Upcoming: **2027** (filing by April 15, 2028, a Saturday, so the IRS will set the exact date), available May 1, 2027.
 
 TaxAssistUS keeps your tax documents in one private folder on your computer. An AI desktop app (Claude, ChatGPT or Gemini) sorts them, and a step-by-step page shows what you'll owe or get back, federal and state, before you file.
+
+**[→ Get started](#get-started):** [fastest, in any AI chatbot](#fastest-any-ai-chatbot-nothing-to-install) (nothing to install) · [full setup](#full-setup-a-private-folder-on-your-computer) (a private folder on your computer)
 
 > **Planning tool, not tax advice.** It doesn't file anything or talk to the IRS. Your tax software (or your CPA) has the final word. For anything complicated, or with a lot at stake, see a CPA or enrolled agent.
 
@@ -23,14 +25,19 @@ TaxAssistUS keeps your tax documents in one private folder on your computer. An 
 - Run in the background. The launcher opens the page and exits. The optional `serve` mode runs until you press Ctrl+C.
 - Cover every situation. The estimate covers wages, investments, a Schedule C business, common deductions and credits, and Arizona or a flat state rate. It doesn't cover married filing separately, AMT, refundable credits, multi-state or part-year returns, rentals, K-1s, or other states' detailed rules ([full list](guides/2_taxes.md#the-estimate-step-4-of-taxassistushtml)).
 
-**Tested on real 2024 and 2025 returns. For 2025, the federal estimate matched a hand-built worksheet within $0.07 (a variance under 0.01%), and the Arizona estimate matched to the cent.**
+**Tested on real 2024 and 2025 returns: federal and state estimates matched hand-built worksheets with a relative difference (Δ) under 0.01%, i.e. more than 99.99% accurate. Other testers report mostly similar results.**
 
 ## Get started
 
 ### Fastest: any AI chatbot, nothing to install
 
 1. Open ChatGPT, Claude, Gemini or Grok, and **turn on web search**.
-2. **Upload your documents** (W-2s, 1099s, 1098s, receipts). Black out Social Security and account numbers first.
+2. **Upload your documents** (W-2s, 1099s, 1098s, receipts). Black out Social Security numbers (keep the last 4 at most), account numbers and birth dates first, with a real Redact tool:
+   - [Adobe Acrobat Pro](https://helpx.adobe.com/acrobat/desktop/protect-documents/redact-pdfs/redact.html): paid; desktop or web app
+   - [Stirling-PDF](https://www.stirling.com/): free and private; runs on your own computer
+   - Paper forms: cover the numbers before you scan or photograph them
+
+   A black box or highlight drawn in an ordinary PDF viewer leaves the text underneath, so it isn't enough.
 3. Copy this prompt, fill in the two blanks, and send it:
 
    ```text

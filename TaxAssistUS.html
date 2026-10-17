@@ -156,6 +156,13 @@ details.q[open]>summary{margin-bottom:12px}
 .drop.over{border-color:var(--accent);background:var(--head)}
 .drop svg{width:44px;height:44px;color:var(--accent)}
 .drop h2{font-size:19px}
+dialog.notice{max-width:min(560px,calc(100vw - 32px));border:1px solid var(--line);border-radius:14px;padding:22px 22px 18px;background:var(--bg);color:var(--fg)}
+dialog.notice::backdrop{background:rgba(0,0,0,.45)}
+dialog.notice h2{margin:0 0 8px;font-size:19px}
+dialog.notice ul{padding-left:20px;margin:10px 0}
+dialog.notice li{margin:6px 0}
+dialog.notice .btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center;margin-top:14px}
+dialog.notice label{margin-right:auto;font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
 .drop p{color:var(--muted);margin:4px 0 14px;font-size:14px}
 .conn{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
 .dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted)}
@@ -351,6 +358,22 @@ tr.zero td{color:var(--muted)}
     </div>
   </div>
 </section>
+
+<dialog class="notice" id="redactDlg" aria-labelledby="redactTitle">
+  <h2 id="redactTitle">Black out sensitive numbers first</h2>
+  <p>Before a document goes to an online AI, redact Social Security numbers (keep the last 4 at most), full bank and account numbers, and birth dates. Files you add here stay on your computer, so redacting now means nothing sensitive reaches a chatbot later.</p>
+  <ul>
+    <li><b>Adobe Acrobat Pro</b> (paid; desktop or web app): use its Redact tool. <a class="ext-link" href="https://helpx.adobe.com/acrobat/desktop/protect-documents/redact-pdfs/redact.html" target="_blank" rel="noopener noreferrer">How to redact in Acrobat Pro</a></li>
+    <li><b>Stirling-PDF</b> (free and private: runs on your own computer): its Redact tool works the same way. <a class="ext-link" href="https://www.stirling.com/" target="_blank" rel="noopener noreferrer">stirling.com</a></li>
+    <li><b>Paper forms:</b> cover the numbers before you scan or photograph them.</li>
+  </ul>
+  <p class="fine">Drawing a black box or highlight in an ordinary PDF viewer doesn't remove the text underneath. Use a real Redact tool, then save a new copy and keep the original.</p>
+  <div class="btns">
+    <label><input type="checkbox" id="redactSkip"> Don't show this again</label>
+    <button type="button" id="redactCancel">Cancel</button>
+    <button type="button" class="primary" id="redactOk">Continue</button>
+  </div>
+</dialog>
 
 <!-- 3 ORGANIZE -->
 <section class="step" data-step="organize" hidden>
@@ -885,13 +908,26 @@ tr.zero td{color:var(--muted)}
     if (root) { try { await saveFiles(files); await refreshInbox(); return; } catch (e) { renderConn('Couldn\'t save: ' + esc(e.message)); } }
     tray = tray.concat(files); renderTray();
   }
-  $('pick').onclick = function () { $('files').click(); };
-  $('headUpload').onclick = function () { if (current !== 'upload') location.hash = 'upload'; $('files').click(); };
+  // Redaction notice before any upload; Continue runs the upload (a click, so the file picker may open)
+  var redactNext = null;
+  function withNotice(next) {
+    var dlg = $('redactDlg');
+    if (store.get('redact-notice-ok') || typeof dlg.showModal !== 'function') return next();
+    redactNext = next; $('redactSkip').checked = false; dlg.showModal(); $('redactOk').focus();
+  }
+  $('redactOk').onclick = function () {
+    if ($('redactSkip').checked) store.set('redact-notice-ok', true);
+    var next = redactNext; redactNext = null; $('redactDlg').close(); if (next) next();
+  };
+  $('redactCancel').onclick = function () { $('redactDlg').close(); };
+  $('redactDlg').addEventListener('close', function () { redactNext = null; });
+  $('pick').onclick = function () { withNotice(function () { $('files').click(); }); };
+  $('headUpload').onclick = function () { if (current !== 'upload') location.hash = 'upload'; withNotice(function () { $('files').click(); }); };
   $('files').onchange = function (e) { take(e.target.files); e.target.value = ''; };
   var drop = $('drop');
   drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
   drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
-  drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('over'); take(e.dataTransfer.files); });
+  drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('over'); var list = [].slice.call(e.dataTransfer.files); withNotice(function () { take(list); }); });
   $('copyPath').onclick = function () { copy(S && S.inboxPath || 'TaxAssistUS/my_tax_files/inbox', this); };
   $('trayDone').onclick = function () { tray = []; location.reload(); };
 
