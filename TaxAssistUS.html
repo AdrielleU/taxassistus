@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tax Assist US</title>
+<style>
+:root{
+  --bg:#fff;--fg:#1a1d21;--muted:#5b6470;--line:#dfe3e8;--head:#f4f6f8;--accent:#1f5fae;--note:#f6f8fb;--surface:#fcfcfb;
+  --grid:#e1e0d9;--axis:#c3c2b7;--ink2:#52514e;--ink3:#898781;--track:#ecebe6;
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--owe:#e34948;--refund:#2a78d6;
+  --good:#0ca30c;--good-ink:#006300;--warn:#fab219;--crit:#d03b3b;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;
+  --bg:#15181c;--fg:#e6e9ed;--muted:#9aa4b0;--line:#2c323a;--head:#1e2329;--accent:#7db3f5;--note:#1b2026;--surface:#1a1a19;
+  --grid:#2c2c2a;--axis:#383835;--ink2:#c3c2b7;--track:#262624;
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--owe:#e66767;--refund:#3987e5;--good-ink:#0ca30c}}
+:root[data-theme=dark]{color-scheme:dark;
+  --bg:#15181c;--fg:#e6e9ed;--muted:#9aa4b0;--line:#2c323a;--head:#1e2329;--accent:#7db3f5;--note:#1b2026;--surface:#1a1a19;
+  --grid:#2c2c2a;--axis:#383835;--ink2:#c3c2b7;--track:#262624;
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--owe:#e66767;--refund:#3987e5;--good-ink:#0ca30c}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--accent)}
+a.ext-link{color:#1a5fd0;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px;font-weight:600}
+a.ext-link:hover{color:#0b3f99}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) a.ext-link{color:#8ab8ff}:root:not([data-theme=light]) a.ext-link:hover{color:#b5d1ff}}
+:root[data-theme=dark] a.ext-link{color:#8ab8ff}
+code{font:13px ui-monospace,Menlo,Consolas,monospace;background:var(--head);padding:1px 5px;border-radius:4px;word-break:break-all}
+button{font:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) button.primary{color:#0b0b0b}}
+:root[data-theme=dark] button.primary{color:#0b0b0b}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+input[type=number],input[type=text],select,textarea{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);width:100%}
+input[type=number]{font-variant-numeric:tabular-nums}
+textarea{min-height:76px;resize:vertical}
+
+/* header + stepper */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+header .in{max-width:1240px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:8px;margin-right:auto}
+.brand b{font-size:17px}.brand b span{color:var(--accent)}
+.brand small{color:var(--muted);font-size:12px}
+.steps{display:flex;gap:2px;overflow-x:auto;list-style:none;margin:0;padding:0;order:3;width:100%}
+@media (min-width:1000px){.steps{order:0;width:auto}}
+.steps a{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;white-space:nowrap;font-size:14px}
+.steps a:hover{background:var(--head)}
+.steps .n{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.steps a[aria-current=step]{color:var(--fg);background:var(--head);font-weight:600}
+.steps a[aria-current=step] .n{border-color:var(--accent);color:var(--accent)}
+.steps a.done .n{background:var(--good);border-color:var(--good);color:#fff;font-size:0}
+.steps a.done .n::after{content:"";width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.up{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:14px;padding:7px 14px;border:0;background:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .up{color:#0b0b0b}}
+:root[data-theme=dark] .up{color:#0b0b0b}
+@media (max-width:640px){
+  header .in{padding:8px 12px;gap:6px 10px}
+  .brand small{display:none}
+  .up{padding:6px 10px;font-size:13px}
+  .steps{justify-content:space-between}
+  .steps a{padding:6px 6px;gap:5px}
+  .steps a:not([aria-current]) .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  main{padding-top:18px}
+  h1{font-size:22px}
+  .tile .v{font-size:21px}.tile.hero .v{font-size:28px}
+}
+.badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:rgba(255,255,255,.28);font-size:12px}
+
+main{max-width:1240px;margin:0 auto;padding:28px 16px 64px}
+.step-head{margin:0 0 20px}
+.step-head .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+h1{font-size:26px;margin:2px 0 4px}
+h2{font-size:17px;margin:0 0 4px}
+.lede{color:var(--muted);margin:0;max-width:780px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 12px}
+.fine{font-size:12px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.stack>*+*{margin-top:20px}
+.two{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
+.layout{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:24px;align-items:start}
+.two>*,.layout>*,.stack>*{min-width:0}
+@media (max-width:900px){.two,.layout{grid-template-columns:1fr}}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:28px;padding-top:16px;border-top:1px solid var(--line)}
+.banner{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--note);border-radius:8px;padding:10px 12px;font-size:14px;margin:0 0 16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;background:var(--head);color:var(--fg)}
+section.step[hidden]{display:none}
+
+/* forms */
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+label.f{display:grid;gap:3px;font-size:13px;align-content:start}
+label.f small{color:var(--muted);font-size:12px}
+label.c{display:flex;gap:8px;align-items:center;font-size:14px}
+label.c input{width:16px;height:16px;accent-color:var(--accent)}
+fieldset{border:0;border-top:1px solid var(--line);margin:0;padding:14px 0 6px}
+fieldset:first-of-type{border-top:0;padding-top:0}
+legend{font-weight:650;font-size:14px;padding:0;margin-bottom:10px}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+pre.yml{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;overflow:auto;max-height:420px;margin:8px 0}
+
+/* profile */
+.pgrid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;align-items:start}
+.psum{position:sticky;top:84px}
+@media (max-width:900px){.pgrid{grid-template-columns:1fr}.psum{position:static}}
+.psum>.k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+.psum .chips{margin:0 0 10px}
+.psave{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+.psave .primary{padding:9px 18px;font-size:14px}
+#pstate{font-size:13px;font-weight:600}
+#pstate.saved{color:var(--good-ink)} #pstate.unsaved{color:var(--crit)}
+.ymld{margin-top:10px;font-size:13px}
+.savebar{display:none}
+@media (max-width:900px){.savebar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);box-shadow:0 -4px 16px rgba(0,0,0,.08);font-weight:600;font-size:14px;color:var(--crit)}
+  section[data-step=profile]{padding-bottom:64px}}
+.ymld summary{cursor:pointer;color:var(--muted)}
+.ymld button{margin:8px 0 0}
+.yearrow{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:14px;color:var(--muted)}
+.yearrow select{width:auto}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 14px}
+.q h2{font-size:16px;margin:0 0 2px}
+.q .qh{color:var(--muted);font-size:13px;margin:0 0 12px}
+details.q>summary{font-weight:650;font-size:15px;cursor:pointer}
+details.q[open]>summary{margin-bottom:12px}
+.tiles2{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg);color:var(--fg);cursor:pointer;font:inherit}
+.opt b{display:block;font-size:14px}
+.opt small{display:block;color:var(--muted);font-size:12px;margin-top:2px;line-height:1.35}
+.opt:hover{border-color:var(--muted)}
+.opt[aria-checked=true]{border-color:var(--accent);background:var(--note);box-shadow:inset 0 0 0 1px var(--accent)}
+.chipset{display:flex;flex-wrap:wrap;gap:8px}
+.tog{border:1.5px solid var(--line);border-radius:99px;padding:7px 14px;background:var(--bg);color:var(--fg);font-size:14px;cursor:pointer}
+.tog:hover{border-color:var(--muted)}
+.tog[aria-pressed=true]{border-color:var(--accent);background:var(--accent);color:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .tog[aria-pressed=true]{color:#0b0b0b}}
+:root[data-theme=dark] .tog[aria-pressed=true]{color:#0b0b0b}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:8px 10px 8px 12px;background:var(--bg)}
+.stepper span b{display:block;font-size:14px;font-weight:600}
+.stepper span small{color:var(--muted);font-size:12px}
+.stepper .ctl{display:flex;align-items:center;gap:6px;flex:none}
+.stepper button{width:32px;height:32px;border-radius:50%;padding:0;font-size:18px;line-height:1}
+.stepper output{min-width:22px;text-align:center;font-weight:650;font-size:16px;font-variant-numeric:tabular-nums}
+.biz{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg);margin:0 0 8px}
+.biz.open{display:block;border-color:var(--accent);padding:12px}
+.bizmain{flex:1;min-width:0}
+.bizmain b{display:block;font-size:14px;overflow-wrap:anywhere}
+.bizmain small{color:var(--muted);font-size:12px}
+.bizbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.bizbar .grow{flex:1}
+.addbiz{border-style:dashed;width:100%;padding:9px;color:var(--accent);font-weight:600;background:transparent}
+.follow{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+
+/* upload + organize */
+.drop{border:2px dashed var(--line);border-radius:14px;padding:32px 16px;text-align:center;background:var(--note)}
+.drop.over{border-color:var(--accent);background:var(--head)}
+.drop svg{width:44px;height:44px;color:var(--accent)}
+.drop h2{font-size:19px}
+.drop p{color:var(--muted);margin:4px 0 14px;font-size:14px}
+.conn{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--muted)}
+.dot.on{background:var(--good)}
+.files{list-style:none;margin:0;padding:0}
+.files li{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
+.files li:first-child{border-top:0}
+.ext{grid-row:span 2;width:38px;height:44px;border-radius:6px;border:1px solid var(--line);display:grid;place-items:end center;padding-bottom:6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;background:var(--bg)}
+.fname{font-weight:600;word-break:break-all}
+.meta{font-size:13px;color:var(--muted)}
+.empty{color:var(--muted);font-size:14px;padding:6px 0;list-style:none}
+.state{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600}
+.state i{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;color:#fff;font-style:normal;font-size:11px}
+.state.ok{color:var(--good-ink)}.state.ok i{background:var(--good)}
+.state.bad{color:var(--crit)}.state.bad i{background:var(--crit)}
+.state.warn i{background:var(--warn);color:#1a1d21}
+.years{display:grid;gap:12px}
+.year{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--bg)}
+.year .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.year h3{margin:0;font-size:20px}
+.year .top button{margin-left:auto}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px 16px;font-size:13px;margin:6px 0}
+.kv div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--line);padding:2px 0}
+.kv b{font-variant-numeric:tabular-nums}.kv .z{color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;margin-top:8px}
+.pick{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
+.pick button{border-radius:99px;padding:6px 14px;font-size:14px}
+.pick .linkish{border:0;background:none;color:var(--accent);text-decoration:underline;padding:6px 4px;font-size:13px}
+.pick button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .pick button[aria-pressed=true]{color:#0b0b0b}}
+:root[data-theme=dark] .pick button[aria-pressed=true]{color:#0b0b0b}
+.ai-tag{font-size:12px;color:var(--muted);margin:0 0 10px}
+ol.setup{margin:0 0 12px;padding-left:20px;font-size:14px}
+ol.setup li{margin:6px 0}
+.h3{font-size:15px;margin:16px 0 6px}
+.inline-up{display:inline-flex;align-items:center;padding:2px 10px;font-size:13px;font-weight:600;border-radius:99px;background:var(--accent);border-color:var(--accent);color:#fff;vertical-align:baseline}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .inline-up{color:#0b0b0b}}
+:root[data-theme=dark] .inline-up{color:#0b0b0b}
+.alt{font-size:14px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:12px 0 0;background:var(--bg)}
+.alt>summary{cursor:pointer;font-weight:600}
+.alt[open]>summary{margin-bottom:8px}
+.plist{list-style:none;margin:8px 0 0;padding:0}
+.where{border:1px solid var(--accent);background:var(--note);border-radius:12px;padding:12px 14px;margin:4px 0;font-size:14px}
+.where .wt{display:block;font-size:15px}
+.where p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.pathrow{display:flex;gap:8px;align-items:center;margin:8px 0 4px}
+.pathrow code{flex:1;padding:7px 9px;font-size:13px;overflow-wrap:anywhere;word-break:normal}
+.pn{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .pn{color:#0b0b0b}}
+:root[data-theme=dark] .pn{color:#0b0b0b}
+.ph .t{flex:1}
+.iconbtn{flex:none;width:34px;height:34px;padding:0;display:grid;place-items:center;border-radius:8px;color:var(--fg)}
+.iconbtn svg{width:16px;height:16px}
+.iconbtn.done{color:var(--good-ink);border-color:var(--good)}
+.plist li{border-top:1px solid var(--line);padding:10px 0}
+.plist .ph{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px}
+.prompt{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0}
+
+/* estimate */
+.mine{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin:0 0 20px;padding:12px 16px;font-size:14px}
+.mine label{font-weight:600}
+.mine select{width:auto;min-width:96px}
+.mine .fine{flex-basis:100%}
+@media (min-width:640px){.mine .fine{flex-basis:auto}}
+@media (max-width:900px){.layout>#inputsCard{order:2}}
+.cdrop{border:1.5px dashed var(--line);border-radius:10px;padding:12px;text-align:center;color:var(--muted);font-size:13px}
+.loaded{list-style:none;margin:8px 0 0;padding:0;font-size:13px;text-align:left}
+.loaded b{color:var(--fg)}
+details{border-top:1px solid var(--line);padding:10px 0 4px}
+summary{cursor:pointer;font-weight:600;font-size:14px}
+.efields{display:grid;gap:10px;margin:10px 0 6px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.tile .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.tile .v{font-size:clamp(19px,2.1vw,24px);font-weight:650;margin-top:2px}
+.tile .d{font-size:12px;color:var(--muted);margin-top:2px}
+.tile.hero{grid-column:span 2}.tile.hero .v{font-size:34px}
+@media (max-width:520px){.tiles{grid-template-columns:1fr 1fr;gap:10px}.tile{padding:12px}.tile.hero{grid-column:1/-1}}
+.msgs{list-style:none;margin:0;padding:0;font-size:14px}
+.msgs li{display:flex;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.msgs li:first-child{border-top:0}
+.msgs .ic{flex:none;width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;margin-top:2px}
+.msgs .w .ic{background:var(--crit)}.msgs .n .ic{background:var(--ink3)}
+.chart{width:100%;display:block;overflow:visible}
+.chart text{font:12px -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;fill:var(--ink2)}
+.chart .val{fill:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+.chart .muted{fill:var(--ink3)}
+.chart .hit{fill:transparent}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0 0;padding:0;list-style:none;font-size:13px}
+.legend li{display:flex;align-items:center;gap:6px;color:var(--ink2)}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.legend b{color:var(--fg);font-variant-numeric:tabular-nums}
+#tip{position:fixed;pointer-events:none;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 4px 16px rgba(0,0,0,.12);max-width:260px;z-index:30}
+#tip b{display:block;margin-bottom:2px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:13px}
+td.r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+tr.sum td{font-weight:650;border-top:1.5px solid var(--axis)}
+tr.zero td{color:var(--muted)}
+
+/* file & plan */
+.todo{list-style:none;margin:0;padding:0}
+.todo li{border:1px solid var(--line);border-radius:10px;margin:0 0 6px;background:var(--bg)}
+.todo label{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;cursor:pointer;font-size:14px}
+.todo input{margin-top:3px;width:16px;height:16px;accent-color:var(--accent);flex:none}
+.todo input:checked~span{color:var(--muted)}
+.todo input:checked~span b{text-decoration:line-through}
+.todo b{display:block;font-weight:600}
+.todo .why{display:block;font-size:13px;color:var(--muted);margin-top:1px}
+.moves li{margin:6px 0}
+.check{border:1px solid var(--line);border-radius:10px;padding:12px;margin:8px 0 14px;background:var(--bg)}
+.check .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.check .row b{font-size:14px}
+.check .row button{margin-left:auto}
+.check .when{font-size:12px;color:var(--muted);margin:6px 0 0}
+.check ul{margin:8px 0 0;padding-left:18px;font-size:13px}
+.ck{flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center}
+.ck.ok{background:var(--good)}
+.ck.ok::after{content:"";width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.ck.bad{background:var(--crit);color:#fff;font-weight:700;font-size:13px}
+.ck.bad::after{content:"!"}
+.ck.spin{border:3px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+.ck.idle{border:2px solid var(--line)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ck.spin{animation-duration:2.5s}}
+.rec{border:1px solid var(--line);border-radius:10px;padding:0;margin:0 0 12px;background:var(--bg);font-size:14px}
+.rec summary{padding:10px 12px;font-weight:400;cursor:pointer}
+.rec[open] summary{border-bottom:1px solid var(--line)}
+.rec>p,.rec>.prompt,.rec>button{margin:10px 12px}
+.rec>button{margin-top:0;margin-bottom:12px}
+.tprog{display:flex;align-items:center;gap:10px;margin:6px 0 12px;font-size:13px;color:var(--muted)}
+.tbar{flex:1;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.tbar i{display:block;height:100%;width:0;background:var(--good);transition:width .25s}
+.success{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--good);background:rgba(12,163,12,.09);border-radius:12px;padding:16px;margin:0 0 14px;animation:pop .35s ease-out}
+.success .ic{flex:none;width:40px;height:40px;border-radius:50%;background:var(--good);display:grid;place-items:center}
+.success .ic::after{content:"";width:9px;height:17px;border:solid #fff;border-width:0 3px 3px 0;transform:translateY(-2px) rotate(45deg)}
+.success b{display:block;font-size:18px;color:var(--good-ink);margin-bottom:2px}
+.success p{margin:2px 0 10px;font-size:14px}
+@keyframes pop{from{transform:scale(.96);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.success{animation:none}.tbar i{transition:none}}
+@media print{header,.nav,#inputsCard,#tip{display:none}.layout,.two{grid-template-columns:1fr}section.step[hidden]{display:block}}
+</style></head>
+<body>
+<script src="my_tax_files/status.js"></script>
+<script src="tools/tax_engine.js"></script>
+
+<header><div class="in">
+  <div class="brand"><b>Tax Assist <span>US</span></b><small>tax assistance for us</small></div>
+  <ol class="steps" id="steps"></ol>
+  <button type="button" class="up" id="headUpload">Upload files <span class="badge" id="badge" hidden></span></button>
+</div></header>
+
+<main>
+<!-- 1 PROFILE -->
+<section class="step" data-step="profile">
+  <div class="step-head"><div class="k">Step 1 of 5</div><h1>About you</h1>
+    <p class="lede">A few quick questions. Your answers shape every number and help your AI help you. Saved privately in <code>my_tax_files/profile.yml</code>.</p></div>
+  <div id="profileBanner"></div>
+  <div class="pgrid">
+    <form id="pform" autocomplete="off"></form>
+    <aside class="card psum">
+      <div class="k">Your profile</div>
+      <div class="chips" id="pchips"></div>
+      <ul class="msgs" id="pnotes"></ul>
+      <div class="psave"><button type="button" class="primary" id="psave">Save profile</button><span id="pstate" aria-live="polite"></span></div>
+      <p class="fine" id="psaveHelp"></p>
+      <div class="savebar" id="savebar" hidden><span>Not saved yet</span><button type="button" class="primary" id="psave2">Save profile</button></div>
+      <details class="ymld"><summary>View profile.yml</summary><button type="button" id="pcopy">Copy</button><pre class="yml" id="pyml"></pre></details>
+    </aside>
+  </div>
+</section>
+
+<!-- 2 UPLOAD -->
+<section class="step" data-step="upload" hidden>
+  <div class="step-head"><div class="k">Step 2 of 5</div><h1>Upload documents</h1>
+    <p class="lede">W-2s, 1099s, 1098s, receipts, screenshots, statements. Everything lands in <code>my_tax_files/inbox/</code>. Copying files into that folder yourself works the same.</p></div>
+  <div class="drop" id="drop">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+    <h2>Drop tax documents here</h2>
+    <p>PDF, photos, CSV exports. Nothing leaves your computer.</p>
+    <button type="button" class="primary" id="pick">Choose files…</button>
+    <input type="file" id="files" multiple hidden>
+    <div class="conn" id="conn"></div>
+  </div>
+  <div class="two" style="margin-top:20px">
+    <div class="card"><h2>Inbox</h2><p class="sub" id="inboxSub"></p><ul class="files" id="inbox"></ul></div>
+    <div class="card" id="trayCard" hidden>
+      <h2>Ready to add</h2><p class="sub" id="trayHelp"></p><ul class="files" id="tray"></ul>
+      <div class="btns" style="margin-top:10px"><button type="button" id="copyPath">Copy inbox path</button><button type="button" id="trayDone">I copied them</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 ORGANIZE -->
+<section class="step" data-step="organize" hidden>
+  <div class="step-head"><div class="k">Step 3 of 5</div><h1>AI Organize</h1>
+    <p class="lede">Install a desktop AI app (Claude, ChatGPT or Gemini), point it at this project's folder once, then copy the prompts below. It identifies each inbox file, files it in <code>my_tax_files/organized/&lt;YEAR&gt;_TaxDocs/</code>, adds the ledger rows, and logs every move.</p></div>
+  <div class="two">
+    <div class="stack">
+      <div class="card" id="aiCard">
+        <h2>Your AI assistant</h2>
+        <p class="sub">Pick a desktop app. It works right in your project folder. Setup takes a few minutes, once.</p>
+        <div class="pick" id="aiPick" role="group" aria-label="AI assistant"></div>
+        <div id="aiBody"></div>
+        <p class="hint">No AI? <code>python3 tools/taxassist.py inbox</code> suggests where each file goes; <code>python3 tools/taxassist.py organize FILE YEAR SUBFOLDER --name NEW_NAME</code> moves and logs it.</p>
+      </div>
+      <div class="card"><h2>What the AI did</h2><p class="sub">From <code>organized/organize_log.csv</code>, newest first.</p><div class="tw"><table id="log"></table></div></div>
+    </div>
+    <div class="card"><h2>Organized</h2><p class="sub">Year folders in <code>my_tax_files/organized/</code>. Problems come from <code>taxassist.py check</code>.</p><div class="years" id="years"></div></div>
+  </div>
+</section>
+
+<!-- 4 ESTIMATE -->
+<section class="step" data-step="estimate" hidden>
+  <div class="step-head"><div class="k">Step 4 of 5</div><h1>Estimate</h1>
+    <p class="lede">What you'll owe or get back, federal and state. Filing status, state and household come from your profile.</p></div>
+  <div class="mine card"><label for="taxYear">Tax year</label><select id="taxYear"></select><button type="button" class="primary" id="yearLoad"></button><span class="fine" id="yearNote"></span></div>
+  <div class="layout">
+    <div class="card" id="inputsCard">
+      <div class="cdrop" id="cdrop">Or drop CSV ledgers here · <button type="button" id="cpick">Load CSV files…</button><input type="file" id="cfiles" accept=".csv,.json" multiple hidden><ul class="loaded" id="loaded"></ul></div>
+      <p class="fine" id="sampleNote">Showing sample numbers. Load your files or type over them.</p>
+      <form id="eform" autocomplete="off"></form>
+      <div class="btns" style="margin-top:12px"><button type="button" id="eexport">Save inputs (.json)</button><button type="button" id="ereset">Reset to sample</button><button type="button" id="eclear">Clear all</button></div>
+    </div>
+    <div class="stack">
+      <div class="tiles" id="tiles"></div>
+      <div class="card" id="msgCard"><h2>What to know</h2><ul class="msgs" id="msgs"></ul></div>
+      <div class="card"><h2>Where every dollar goes</h2><p class="sub" id="flowSub"></p><svg class="chart" id="flow" role="img" aria-label="Share of gross income kept and paid in each tax"></svg><ul class="legend" id="flowLegend"></ul></div>
+      <div class="card"><h2>Your federal tax brackets</h2><p class="sub" id="brSub"></p><svg class="chart" id="brackets" role="img" aria-label="Taxable income filled in each federal bracket"></svg></div>
+      <div class="card"><h2>What if you save more pre-tax?</h2><p class="sub" id="wiSub"></p><svg class="chart" id="whatif" role="img" aria-label="Net owe or refund for each extra pre-tax 401(k) amount"></svg>
+        <ul class="legend"><li><i style="background:var(--owe)"></i>Owe at filing</li><li><i style="background:var(--refund)"></i>Refund</li></ul></div>
+      <div class="card"><h2>The math, line by line</h2><p class="sub">Compare these with your tax software before you file. <button type="button" id="copyMath">Copy as text</button></p>
+        <div class="tw"><table id="fedTable"></table></div><h2 style="margin-top:20px" id="stTitle">State</h2><div class="tw"><table id="stTable"></table></div>
+        <p class="fine" id="srcNote"></p><p class="fine">Planning estimate only, not tax advice. Doesn't model AMT, refundable credits, multi-state returns, or every state's rules.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 FILE & PLAN -->
+<section class="step" data-step="file" hidden>
+  <div class="step-head"><div class="k">Step 5 of 5</div><h1>File &amp; plan</h1><p class="lede" id="fileLede"></p></div>
+  <div class="two">
+    <div class="card"><h2>Filing checklist</h2>
+      <div class="check" id="recCheck" aria-live="polite"></div>
+      <div class="tprog"><div class="tbar"><i id="todoBar"></i></div><span id="todoCount"></span></div>
+      <div class="success" id="todoDone" role="status" hidden></div>
+      <details class="rec" id="rec">
+        <summary>We recommend <a class="ext-link" href="https://www.freetaxusa.com/" target="_blank" rel="noopener noreferrer">FreeTaxUSA.com<span class="sr"> (opens in a new tab)</span></a> · federal $0, state $15.99</summary>
+        <p>Any tax software works (TurboTax, H&amp;R Block…). We built Tax Assist US around this one: no income limit, and W-2s, 1099s, a Schedule C business, investments and student loan interest are all included. Check current prices before you file. Rentals, K-1s or several states? Use a CPA or enrolled agent.</p>
+        <p><b>Not sure where something goes?</b> Ask your AI (step 3) for directions on the site you're using:</p>
+        <div class="prompt" id="recPrompt"></div>
+        <button type="button" id="recCopy">Copy prompt</button>
+      </details>
+      <ul class="todo" id="todo"></ul><p class="fine">Ticks are saved in this browser.</p></div>
+    <div class="stack">
+      <div class="card"><h2>Dates</h2><div class="tw"><table id="dates"></table></div></div>
+      <div class="card"><h2>Pay less next year</h2><ul class="moves" id="moves"></ul></div>
+    </div>
+  </div>
+</section>
+
+<div class="nav"><button type="button" id="back">← Back</button><button type="button" class="primary" id="next">Next →</button></div>
+<p class="fine" id="snap"></p>
+</main>
+<div id="tip" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  var E = window.TaxEngine;
+  var S = window.TAX_ASSIST_STATUS || null;
+  var $ = function (id) { return document.getElementById(id); };
+  var store = {
+    get: function (k) { try { return JSON.parse(localStorage.getItem('taxassistus-' + k)); } catch (e) { return null; } },
+    set: function (k, v) { try { localStorage.setItem('taxassistus-' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var money = function (n) { return '$' + Math.round(Math.abs(n)).toLocaleString('en-US'); };
+  var cents = E.money;
+  var pct = function (n, d) { return (n * 100).toFixed(d == null ? 1 : d) + '%'; };
+  var compact = function (n) { var a = Math.abs(n); return (n < 0 ? '-' : '') + (a >= 1000 ? '$' + (+(a / 1000).toFixed(a >= 10000 ? 0 : 1)) + 'K' : '$' + Math.round(a)); };
+  function copy(text, btn) {
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(function () { var t = btn.textContent; btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = t; }, 1500); }, function () {});
+  }
+  function download(name, text, type) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name; a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  // ======================================================== steps
+  var STEPS = [['profile', 'Profile'], ['upload', 'Upload'], ['organize', 'AI Organize'], ['estimate', 'Estimate'], ['file', 'File & plan']];
+  var current = 'profile';
+  function done(id) {
+    var years = S ? S.years : [], docs = 0;
+    years.forEach(function (y) { Object.keys(y.folders).forEach(function (k) { docs += y.folders[k]; }); });
+    if (id === 'profile') return !!(S && S.profile && !S.profileIsTemplate && !(S.profileIssues || []).length) && !dirty;
+    if (id === 'upload') return docs > 0 || (S && S.inbox.length > 0);
+    if (id === 'organize') return docs > 0 && !(S && S.inbox.length);
+    if (id === 'estimate') return !!store.get('estimated');
+    if (id === 'file') { if (typeof todoItems !== 'function' || !P) return false; var t = todoState(); return todoItems(todoYear()).every(function (_, i) { return t[i]; }); }
+    return false;
+  }
+  function renderSteps() {
+    $('steps').innerHTML = STEPS.map(function (s, i) {
+      return '<li><a href="#' + s[0] + '" class="' + (done(s[0]) ? 'done' : '') + '"' + (s[0] === current ? ' aria-current="step"' : '') + ' title="' + s[1] + '"><span class="n">' + (i + 1) + '</span><span class="lbl">' + s[1] + '</span></a></li>';
+    }).join('');
+  }
+  function go(id) {
+    if (!STEPS.some(function (s) { return s[0] === id; })) id = 'profile';
+    current = id;
+    [].forEach.call(document.querySelectorAll('section.step'), function (s) { s.hidden = s.getAttribute('data-step') !== id; });
+    var i = STEPS.findIndex(function (s) { return s[0] === id; });
+    $('back').style.visibility = i ? 'visible' : 'hidden';
+    $('next').style.visibility = i < STEPS.length - 1 ? 'visible' : 'hidden';
+    $('next').textContent = i < STEPS.length - 1 ? 'Next: ' + STEPS[i + 1][1] + ' →' : '';
+    renderSteps();
+    if (id === 'estimate') renderEstimate();
+    if (id === 'file') renderFile();
+    if (id === 'organize') renderAI();
+    scrollTo(0, 0);
+  }
+  addEventListener('hashchange', function () { go(location.hash.slice(1)); });
+  $('back').onclick = function () { var i = STEPS.findIndex(function (s) { return s[0] === current; }); location.hash = STEPS[Math.max(0, i - 1)][0]; };
+  $('next').onclick = function () { var i = STEPS.findIndex(function (s) { return s[0] === current; }); location.hash = STEPS[Math.min(STEPS.length - 1, i + 1)][0]; };
+
+  // ======================================================== folder connection (Chrome / Edge)
+  var canWrite = 'showDirectoryPicker' in window;
+  var served = /^https?:$/.test(location.protocol); // opened through `taxassist.py serve`
+  var root = null; // handle to my_tax_files
+  function idb(mode, fn) {
+    return new Promise(function (ok, bad) {
+      var req = indexedDB.open('taxassistus', 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore('handles'); };
+      req.onerror = function () { bad(req.error); };
+      req.onsuccess = function () {
+        var tx = req.result.transaction('handles', mode), r = fn(tx.objectStore('handles'));
+        tx.oncomplete = function () { ok(r && r.result); };
+        tx.onerror = function () { bad(tx.error); };
+      };
+    });
+  }
+  async function resolveRoot(h) {
+    if (h.name === 'my_tax_files') return h;
+    try { return await h.getDirectoryHandle('my_tax_files'); } catch (e) {}
+    for await (var entry of h.values()) if (entry.kind === 'directory' && (entry.name === 'inbox' || entry.name === 'organized')) return h;
+    return null;
+  }
+  async function connect() {
+    try {
+      var r = await resolveRoot(await window.showDirectoryPicker({ id: 'taxassistus', mode: 'readwrite' }));
+      if (!r) { renderConn('Pick the <code>TaxAssistUS</code> folder (or <code>my_tax_files</code> inside it).'); return false; }
+      root = r;
+      try { await idb('readwrite', function (s) { return s.put(r, 'root'); }); } catch (e) {}
+      if (tray.length) { var t = tray; tray = []; renderTray(); await saveFiles(t); }
+      await refreshInbox(); renderProfileSave();
+      return true;
+    } catch (e) { if (e.name !== 'AbortError') renderConn('Couldn\'t open the folder: ' + esc(e.message)); return false; }
+  }
+  function renderConn(msg) {
+    var c = $('conn');
+    if (msg) c.innerHTML = '<span>' + msg + '</span>';
+    else if (root) c.innerHTML = '<span class="dot on" aria-hidden="true"></span><span>Connected. Uploads save straight into <code>my_tax_files/inbox/</code>.</span>';
+    else if (canWrite) { c.innerHTML = '<span class="dot" aria-hidden="true"></span><span>Connect the <code>TaxAssistUS</code> folder once so uploads save straight to the inbox.</span> <button type="button" id="connect">Connect folder</button>'; $('connect').onclick = connect; }
+    else c.innerHTML = '<span class="dot" aria-hidden="true"></span><span>This browser can\'t save into folders: after you drop files, copy them into the inbox. (Chrome and Edge can save them for you.)</span>';
+  }
+
+  // ======================================================== 1 PROFILE
+  var STATES = [['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],['DC','District of Columbia'],['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],['WI','Wisconsin'],['WY','Wyoming']];
+  var NO_TAX = { AK: 1, FL: 1, NV: 1, NH: 1, SD: 1, TN: 1, TX: 1, WA: 1, WY: 1 };
+  var STATUS = [['single', 'Single'], ['married_joint', 'Married filing jointly'], ['married_separate', 'Married filing separately'], ['head_of_household', 'Head of household'], ['qualifying_surviving_spouse', 'Qualifying surviving spouse']];
+  var YEARS = Object.keys(E.TAX_YEARS);
+  var thisYear = new Date().getFullYear();
+  if (YEARS.indexOf(String(thisYear)) < 0) YEARS.push(String(thisYear));
+
+  var FILING = [
+    ['single', 'Single', 'Not married on December 31'],
+    ['married_joint', 'Married, filing together', 'One return for both of you. Usually the cheapest.'],
+    ['married_separate', 'Married, filing separately', 'Each spouse files their own return'],
+    ['head_of_household', 'Head of household', 'Unmarried, paying over half the costs of a home for a dependent'],
+    ['qualifying_surviving_spouse', 'Surviving spouse', 'Spouse died in the last 2 years, with a dependent child']];
+  var EARN = [['job', 'A job (W-2)'], ['income.self_employed', 'Self-employed or a business'], ['income.investments', 'Investments or interest'],
+    ['income.rental', 'Rental property'], ['income.retirement_distributions', 'Retirement withdrawals'], ['income.unemployment', 'Unemployment'], ['income.crypto', 'Crypto'],
+    ['income.spouse_has_income', 'My spouse has income', 'married']];
+  var ALSO = [['accounts.student_loans', 'Student loans'], ['accounts.hsa', 'HSA'], ['itemize', 'I itemize deductions'], ['filing.extension', 'Filing an extension']];
+  var PDEFAULT = { tax_year: thisYear, filing_status: 'single', state: '', state_residency: 'full_year', state_effective_rate: null, dependents_under_17: 0, other_dependents: 0, age_65_or_older: 0, paychecks_per_year: 26, ai_assistant: null,
+    income: { w2_jobs: 1, spouse_has_income: false, self_employed: false, investments: false, rental: false, retirement_distributions: false, unemployment: false, crypto: false },
+    businesses: [], accounts: { brokers: [], retirement: [], hsa: false, student_loans: false },
+    filing: { deduction: 'standard', extension: false }, history: [], goals: [], notes: [] };
+  // Business types: the first four are reported on Schedule C of your own return
+  var BIZ_TYPES = [['single_member_llc', 'Single-member LLC'], ['sole_proprietor', 'Sole proprietor (no LLC)'], ['contractor_1099', 'Independent contractor (1099)'],
+    ['gig', 'Gig or app work'], ['multi_member_llc', 'Multi-member LLC / partnership'], ['s_corp', 'S corporation'], ['c_corp', 'C corporation']];
+  var SCHED_C = { single_member_llc: 1, sole_proprietor: 1, contractor_1099: 1, gig: 1 };
+  function bizType(t) { return (BIZ_TYPES.filter(function (b) { return b[0] === t; })[0] || [0, 'Business'])[1]; }
+  var bizOpen = -1; // which business row is expanded for editing
+  function merge(base, over) {
+    var o = JSON.parse(JSON.stringify(base));
+    Object.keys(over || {}).forEach(function (k) {
+      if (o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) && over[k] && typeof over[k] === 'object') o[k] = merge(o[k], over[k]);
+      else if (over[k] !== undefined) o[k] = over[k];
+    });
+    return o;
+  }
+  function getP(p, path) { return path.split('.').reduce(function (o, k) { return o == null ? o : o[k]; }, p); }
+  function setP(p, path, v) { var ks = path.split('.'), o = p; ks.slice(0, -1).forEach(function (k) { o = o[k] = o[k] || {}; }); o[ks[ks.length - 1]] = v; }
+
+  var draft = store.get('profile-draft');
+  var psrc = draft || (S && S.profile) || {};
+  var P = merge(PDEFAULT, psrc);
+  if (!Array.isArray(psrc.businesses) && psrc.business && psrc.business.entity && psrc.business.entity !== 'none') // older one-business profiles
+    P.businesses = [{ name: psrc.business.name, type: psrc.business.entity, started: psrc.business.started, home_office: !!psrc.business.home_office }];
+  delete P.business;
+  var dirty = !!draft; // edits not yet written to profile.yml
+
+  // ---- building blocks
+  function opts(list, sel) { return list.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join(''); }
+  function field(label, ctl, hint, when) { return '<label class="f"' + (when ? ' data-when="' + when + '"' : '') + '><span>' + label + '</span>' + ctl + (hint ? '<small>' + hint + '</small>' : '') + '</label>'; }
+  function sel(path, list) { return '<select id="p_' + path.replace(/\./g, '_') + '" data-path="' + path + '" data-type="select">' + opts(list) + '</select>'; }
+  function inp(path, type, ph) { return '<input type="' + (type === 'number' ? 'number" step="any' : 'text') + '" id="p_' + path.replace(/\./g, '_') + '" data-path="' + path + '" data-type="' + type + '"' + (ph ? ' placeholder="' + ph + '"' : '') + '>'; }
+  function area(path, ph) { return '<textarea id="p_' + path + '" data-path="' + path + '" data-type="lines" placeholder="' + ph + '"></textarea>'; }
+  function stepper(path, label, hint, max) {
+    return '<div class="stepper"><span><b>' + label + '</b>' + (hint ? '<small>' + hint + '</small>' : '') + '</span><span class="ctl">' +
+      '<button type="button" data-act="dec" data-path="' + path + '" aria-label="Fewer: ' + label + '">−</button><output data-out="' + path + '">0</output>' +
+      '<button type="button" data-act="inc" data-path="' + path + '" data-max="' + (max || 9) + '" aria-label="More: ' + label + '">+</button></span></div>';
+  }
+  function chips(list) { return '<div class="chipset">' + list.map(function (c) { return '<button type="button" class="tog" data-act="tog" data-path="' + c[0] + '"' + (c[2] ? ' data-when="' + c[2] + '"' : '') + ' aria-pressed="false">' + esc(c[1]) + '</button>'; }).join('') + '</div>'; }
+  function q(title, hint, body, when) { return '<div class="q"' + (when ? ' data-when="' + when + '"' : '') + '><h2>' + title + '</h2>' + (hint ? '<p class="qh">' + hint + '</p>' : '') + body + '</div>'; }
+
+  function buildProfileForm() {
+    $('pform').innerHTML =
+      '<div class="yearrow"><label for="p_tax_year">Working on tax year</label>' + sel('tax_year', YEARS.map(function (y) { return [+y, y]; })) + '</div>' +
+      q('How do you file?', 'Your status on December 31.', '<div class="tiles2" role="radiogroup" aria-label="Filing status">' + FILING.map(function (f) {
+        return '<button type="button" class="opt" role="radio" data-act="pick" data-path="filing_status" data-val="' + f[0] + '" aria-checked="false"><b>' + f[1] + '</b><small>' + f[2] + '</small></button>'; }).join('') + '</div>') +
+      q('Where do you live?', '', '<div class="grid2">' + field('State', sel('state', [['', 'Choose your state…']].concat(STATES))) +
+        field('Lived there', sel('state_residency', [['full_year', 'All year'], ['part_year', 'Part of the year'], ['nonresident', 'Not a resident']])) +
+        field('State tax rate (%)', inp('state_effective_rate', 'number', 'e.g. 4.5'), 'From last year\'s state return: state tax ÷ taxable income', 'ratestate') + '</div>') +
+      q('Who\'s on your return?', 'Besides you (and your spouse, if filing together).', '<div class="grid2">' +
+        stepper('dependents_under_17', 'Kids under 17', '', 12) + stepper('other_dependents', 'Other dependents', 'College students, parents', 9) +
+        stepper('age_65_or_older', 'Age 65 or older', 'You and your spouse', 2) + '</div>') +
+      q('How do you make money?', 'Pick everything that applies.', chips(EARN) +
+        '<div class="follow grid2" data-when="job">' + stepper('income.w2_jobs', 'W-2 jobs', 'Count each employer', 9) +
+        field('Paid how often?', sel('paychecks_per_year', [[52, 'Every week'], [26, 'Every two weeks'], [24, 'Twice a month'], [12, 'Once a month']])) + '</div>') +
+      q('Your businesses and side work', 'LLCs, freelance or 1099 contract work, gig apps. Add each one.', '<div id="bizList"></div>', 'biz') +
+      q('Anything else?', 'Tap what applies.', chips(ALSO)) +
+      '<details class="q"><summary>More details (optional)</summary><div class="grid2">' +
+        field('Brokers and banks that send 1099s', inp('accounts.brokers', 'list', 'Fidelity, Wealthfront'), 'Separate with commas') +
+        field('Retirement accounts', inp('accounts.retirement', 'list', '401k, Roth IRA'), 'Separate with commas') + '</div></details>' +
+      '<details class="q"><summary>Notes for your AI (optional)</summary><div class="grid2" style="grid-template-columns:1fr">' +
+        field('Goals', area('goals', 'Owe about $0 next April'), 'One per line') +
+        field('History', area('history', '2025: refund $500, filed on time'), 'One line per year') +
+        field('Notes', area('notes', 'Two jobs this year; started a side business in June'), 'No SSNs or account numbers') + '</div></details>';
+    $('pform').addEventListener('click', onProfileClick);
+    $('pform').addEventListener('input', onProfileInput);
+    $('pform').addEventListener('change', onProfileInput);
+    renderBiz();
+    renderProfile();
+  }
+  function renderBiz() {
+    var list = P.businesses || [];
+    $('bizList').innerHTML = list.map(function (b, i) {
+      var pre = 'businesses.' + i + '.';
+      if (i !== bizOpen) return '<div class="biz"><div class="bizmain"><b>' + esc(b.name || 'Unnamed business') + '</b><small>' + esc(bizType(b.type)) +
+        (b.started ? ' · since ' + esc(b.started) : '') + (b.home_office ? ' · home office' : '') + '</small></div>' +
+        '<button type="button" data-act="bizedit" data-i="' + i + '">Edit</button></div>';
+      return '<div class="biz open"><div class="grid2">' + field('Name', inp(pre + 'name', 'text', 'e.g. My Design LLC')) + field('Type', sel(pre + 'type', BIZ_TYPES)) +
+        field('Year started', inp(pre + 'started', 'number', 'e.g. 2025')) + '</div><div class="bizbar">' +
+        '<button type="button" class="tog" data-act="tog" data-path="' + pre + 'home_office" aria-pressed="false">Home office</button><span class="grow"></span>' +
+        '<button type="button" data-act="bizdel" data-i="' + i + '">Remove</button><button type="button" class="primary" data-act="bizdone">Done</button></div></div>';
+    }).join('') + '<button type="button" class="addbiz" data-act="bizadd">+ Add ' + (list.length ? 'another' : 'a') + ' business or side gig</button>';
+    syncForm();
+  }
+  // Put P's values into every control
+  function syncForm() {
+    [].forEach.call($('pform').querySelectorAll('[data-type]'), function (el) {
+      if (el === document.activeElement && el.tagName !== 'SELECT') return;
+      var v = getP(P, el.getAttribute('data-path')), t = el.getAttribute('data-type');
+      if (t === 'lines') el.value = (v || []).join('\n');
+      else if (t === 'list') el.value = (v || []).join(', ');
+      else el.value = v == null ? '' : v;
+    });
+    [].forEach.call($('pform').querySelectorAll('[data-act="pick"]'), function (b) { b.setAttribute('aria-checked', String(getP(P, b.getAttribute('data-path')) === b.getAttribute('data-val'))); });
+    [].forEach.call($('pform').querySelectorAll('[data-act="tog"]'), function (b) { b.setAttribute('aria-pressed', String(togValue(b.getAttribute('data-path')))); });
+    [].forEach.call($('pform').querySelectorAll('[data-out]'), function (o) { o.textContent = getP(P, o.getAttribute('data-out')) || 0; });
+    var when = { married: /married/.test(P.filing_status), job: (P.income.w2_jobs || 0) > 0, biz: !!P.income.self_employed, ratestate: !!P.state && !NO_TAX[P.state] && P.state !== 'AZ' };
+    [].forEach.call($('pform').querySelectorAll('[data-when]'), function (el) { el.hidden = !when[el.getAttribute('data-when')]; });
+  }
+  function togValue(path) {
+    if (path === 'job') return (P.income.w2_jobs || 0) > 0;
+    if (path === 'itemize') return P.filing.deduction === 'itemized';
+    return !!getP(P, path);
+  }
+  function changed() {
+    store.set('profile-draft', P);
+    dirty = true;
+    syncForm();
+    renderProfile();
+    applyProfileToEstimate();
+  }
+  function onProfileClick(e) {
+    var b = e.target.closest('[data-act]');
+    if (!b) return;
+    var path = b.getAttribute('data-path'), act = b.getAttribute('data-act'), bi = +b.getAttribute('data-i');
+    if (act === 'bizedit' || act === 'bizdone') { bizOpen = act === 'bizedit' ? bi : -1; renderBiz(); return; }
+    if (act === 'bizadd') { P.businesses.push({ name: null, type: 'single_member_llc', started: null, home_office: false }); bizOpen = P.businesses.length - 1; renderBiz(); changed(); return; }
+    if (act === 'bizdel') { P.businesses.splice(bi, 1); bizOpen = -1; renderBiz(); changed(); return; }
+    if (act === 'pick') setP(P, path, b.getAttribute('data-val'));
+    else if (act === 'inc' || act === 'dec') {
+      var v = (getP(P, path) || 0) + (act === 'inc' ? 1 : -1);
+      setP(P, path, Math.max(path === 'income.w2_jobs' ? 1 : 0, Math.min(+(b.getAttribute('data-max') || $('pform').querySelector('[data-act="inc"][data-path="' + path + '"]').getAttribute('data-max')), v)));
+    } else if (act === 'tog') {
+      var on = !togValue(path);
+      if (path === 'job') P.income.w2_jobs = on ? Math.max(1, P.income.w2_jobs || 0) : 0;
+      else if (path === 'itemize') P.filing.deduction = on ? 'itemized' : 'standard';
+      else setP(P, path, on);
+      if (path === 'income.self_employed' && on && !P.businesses.length) { P.businesses.push({ name: null, type: 'single_member_llc', started: null, home_office: false }); bizOpen = 0; renderBiz(); }
+    }
+    changed();
+  }
+  function onProfileInput(e) {
+    var el = e.target, path = el.getAttribute('data-path');
+    if (!path) return;
+    var t = el.getAttribute('data-type'), v;
+    if (t === 'number') v = el.value === '' ? null : +el.value;
+    else if (t === 'lines') v = el.value.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+    else if (t === 'list') v = el.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    else if (t === 'select') v = /^\d+$/.test(el.value) ? +el.value : el.value;
+    else v = el.value.trim() || null;
+    if (JSON.stringify(getP(P, path)) === JSON.stringify(v)) return;
+    setP(P, path, v);
+    changed();
+  }
+
+  // YAML in the same layout as templates/profile.yml, read back by tools/taxassist.py
+  function y(v) {
+    if (v == null || v === '') return '';
+    if (typeof v === 'boolean') return v ? 'yes' : 'no';
+    if (typeof v === 'number') return String(v);
+    var s = String(v);
+    return /^[\w .()\/+&-]+$/.test(s) && !/^(yes|no|true|false|on|off|null|~|-?\d+(\.\d+)?)$/i.test(s) && s === s.trim() ? s : '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  }
+  function inline(list) { return '[' + (list || []).map(function (s) { return y(String(s).replace(/,/g, ' ')).replace(/^"|"$/g, ''); }).join(', ') + ']'; }
+  function block(key, list) { return list && list.length ? key + ':\n' + list.map(function (s) { return '  - "' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }).join('\n') : key + ': []'; }
+  function line(k, v, c, ind) { var s = (ind || '') + k + ': ' + v; return c ? s + new Array(Math.max(2, 30 - s.length)).join(' ') + '# ' + c : s; }
+  function bizYaml(list) {
+    var head = 'businesses:                   # type: single_member_llc | sole_proprietor | contractor_1099 | gig | multi_member_llc | s_corp | c_corp';
+    if (!list || !list.length) return 'businesses: []                # add one per business: name, type, started, home_office';
+    return head + '\n' + list.map(function (b) {
+      return '  - name: ' + y(b.name) + '\n    type: ' + y(b.type) + '\n    started: ' + y(b.started) + '\n    home_office: ' + y(!!b.home_office);
+    }).join('\n');
+  }
+  function toYaml(p) {
+    var i = p.income, a = p.accounts, f = p.filing;
+    return ['# Tax Assist US profile. Lives at my_tax_files/profile.yml (private, never in git).',
+      '# Edit here or in step 1 of TaxAssistUS.html. No SSNs, account numbers or passwords.', '',
+      line('tax_year', y(p.tax_year), 'the year you\'re working on'),
+      line('filing_status', y(p.filing_status), 'single | married_joint | married_separate | head_of_household | qualifying_surviving_spouse'),
+      line('state', y(p.state), 'two-letter code of the state you live in'),
+      line('state_residency', y(p.state_residency), 'full_year | part_year | nonresident'),
+      line('state_effective_rate', y(p.state_effective_rate), '% for states the estimator doesn\'t model'),
+      line('dependents_under_17', y(p.dependents_under_17 || 0)),
+      line('other_dependents', y(p.other_dependents || 0)),
+      line('age_65_or_older', y(p.age_65_or_older || 0), 'people on the return'),
+      line('paychecks_per_year', y(p.paychecks_per_year), '52 weekly, 26 biweekly, 24 semimonthly, 12 monthly'),
+      line('ai_assistant', y(p.ai_assistant), 'chatgpt | claude | gemini | grok | gemma (step 3 of TaxAssistUS.html)'), '',
+      'income:', line('w2_jobs', y(i.w2_jobs || 0), '', '  '), line('spouse_has_income', y(!!i.spouse_has_income), '', '  '), line('self_employed', y(!!i.self_employed), '', '  '),
+      line('investments', y(!!i.investments), '', '  '), line('rental', y(!!i.rental), '', '  '), line('retirement_distributions', y(!!i.retirement_distributions), '', '  '),
+      line('unemployment', y(!!i.unemployment), '', '  '), line('crypto', y(!!i.crypto), '', '  '), '',
+      bizYaml(p.businesses), '',
+      'accounts:', line('brokers', inline(a.brokers), '', '  '), line('retirement', inline(a.retirement), '', '  '), line('hsa', y(!!a.hsa), '', '  '), line('student_loans', y(!!a.student_loans), '', '  '), '',
+      'filing:', line('deduction', y(f.deduction), 'standard | itemized', '  '), line('extension', y(!!f.extension), '', '  '), '',
+      block('history', p.history), '', block('goals', p.goals), '', block('notes', p.notes), ''].join('\n');
+  }
+
+  function profileNotes(p) {
+    var n = [];
+    var st = p.filing_status, biz = p.income.self_employed ? (p.businesses || []) : [];
+    var sc = biz.filter(function (b) { return SCHED_C[b.type]; }), k1 = biz.filter(function (b) { return b.type === 'multi_member_llc' || b.type === 's_corp'; });
+    if (st === 'married_separate') n.push(['w', 'Married filing separately isn\'t modeled by the estimator; it uses single brackets as a rough guide. Joint is usually cheaper. Compare both in your tax software.']);
+    if (st === 'qualifying_surviving_spouse') n.push(['n', 'Qualifying surviving spouse uses the married-filing-jointly brackets and standard deduction.']);
+    if (st === 'head_of_household' && !(p.dependents_under_17 || p.other_dependents)) n.push(['w', 'Head of household requires a qualifying person who lived with you for more than half the year.']);
+    if (sc.length) n.push(['n', (sc.length > 1 ? 'Each of these ' + sc.length + ' businesses gets its own Schedule C on your 1040, and self-employment tax (15.3%) applies to their combined profit. Tag every expense with its business in the ledger\'s Business / Venture column.'
+      : (sc[0].type === 'single_member_llc' ? 'A single-member LLC is taxed like a sole proprietor unless it elected S-corp status: ' : '') + 'Schedule C on your 1040, plus 15.3% self-employment tax on profit.') + ' No tax is withheld, so plan quarterly estimates once it\'s profitable.']);
+    k1.forEach(function (b) { n.push(['w', (b.name || bizType(b.type)) + ' files its own return (' + (b.type === 's_corp' ? 'Form 1120-S' : 'Form 1065') + ') and sends you a K-1. Enter your K-1 share as other income in the estimate; consider a CPA.']); });
+    biz.filter(function (b) { return b.type === 'c_corp'; }).forEach(function (b) { n.push(['w', (b.name || 'Your C corporation') + ' pays its own tax (Form 1120). Only the salary and dividends it pays you go on your return.']); });
+    if ((p.income.w2_jobs || 0) >= 2 || (/married_joint/.test(st) && p.income.spouse_has_income)) n.push(['n', 'Two incomes: each employer withholds as if it\'s your only job. Check the W-4 (Step 2c or extra in 4c).']);
+    if (p.state_residency !== 'full_year') n.push(['w', 'Part-year or nonresident state returns aren\'t modeled. The estimate treats you as a full-year resident.']);
+    if (!p.state) n.push(['w', 'Choose your state so the estimate includes state tax.']);
+    else if (!NO_TAX[p.state] && p.state !== 'AZ' && !p.state_effective_rate) n.push(['w', 'Enter a state effective rate (from last year\'s state return) so the estimate includes state tax.']);
+    if (p.income.rental || p.income.crypto) n.push(['n', 'Rental and crypto details need tax software or a pro; enter their net taxable amounts as other income in the estimate.']);
+    return n;
+  }
+  function renderProfile() {
+    var stName = P.state ? (STATES.filter(function (s) { return s[0] === P.state; })[0] || [0, P.state])[1] : 'State not set';
+    var kids = (P.dependents_under_17 || 0) + (P.other_dependents || 0);
+    var chips = [(STATUS.filter(function (s) { return s[0] === P.filing_status; })[0] || [0, ''])[1], stName + (NO_TAX[P.state] ? ' (no income tax)' : ''), kids ? kids + ' dependent' + (kids > 1 ? 's' : '') : 'No dependents'];
+    if (P.income.w2_jobs) chips.push(P.income.w2_jobs + ' W-2 job' + (P.income.w2_jobs === 1 ? '' : 's'));
+    if (P.income.self_employed) (P.businesses || []).forEach(function (b) { chips.push((b.name || 'Business') + ' · ' + bizType(b.type)); });
+    if (P.income.investments) chips.push('Investments');
+    $('pchips').innerHTML = chips.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
+    var notes = profileNotes(P);
+    $('pnotes').innerHTML = notes.map(function (m) { return '<li class="' + m[0] + '"><span class="ic" aria-hidden="true">' + (m[0] === 'w' ? '!' : 'i') + '</span><span>' + esc(m[1]) + '</span></li>'; }).join('');
+    $('pyml').textContent = toYaml(P);
+    $('profileBanner').innerHTML = !S ? '<div class="banner">No folder snapshot yet. Double-click <b>Start-TaxAssistUS</b> for your computer (<b>_Windows</b>, <b>_Mac</b> or <b>_Linux</b>) (or run <code>python3 tools/taxassist.py start</code>) so this page can read <code>profile.yml</code> and your folders.</div>'
+      : S.profile && !S.profileIsTemplate ? '' : '<div class="banner">Welcome! Answer a few questions and press <b>Save profile</b>. It takes two minutes.</div>';
+    $('pstate').textContent = dirty ? 'Not saved yet' : 'All changes saved';
+    $('pstate').className = dirty ? 'unsaved' : 'saved';
+    $('savebar').hidden = !(dirty && current === 'profile');
+    renderProfileSave();
+    renderSteps();
+  }
+  function renderProfileSave() {
+    $('psaveHelp').innerHTML = served || root ? 'Saves to <code>my_tax_files/profile.yml</code>.'
+      : canWrite ? 'Click Save and pick the <code>TaxAssistUS</code> folder once; after that it saves straight to <code>my_tax_files/profile.yml</code>.'
+      : 'Save downloads <code>profile.yml</code>. Move it into <code>my_tax_files/</code>, replacing the old one.';
+  }
+  function markSaved(btn) {
+    try { localStorage.removeItem('taxassistus-profile-draft'); } catch (e) {}
+    dirty = false;
+    if (S) { S.profile = JSON.parse(JSON.stringify(P)); S.profileIsTemplate = false; }
+    btn.textContent = 'Saved ✓'; setTimeout(function () { btn.textContent = 'Save profile'; }, 1500);
+    renderProfile();
+  }
+  $('psave').onclick = async function () {
+    var text = toYaml(P), btn = this;
+    if (served) { // serve mode writes the file through the local server
+      try {
+        var r = await fetch('api/profile', { method: 'POST', headers: { 'Content-Type': 'text/plain; charset=utf-8' }, body: text });
+        if (!r.ok) throw new Error('server said ' + r.status);
+        markSaved(btn); return;
+      } catch (e) { $('psaveHelp').textContent = 'Couldn\'t save: ' + e.message + '. Is serve mode still running?'; return; }
+    }
+    if (!root && canWrite) await connect();
+    if (root) {
+      try {
+        var w = await (await root.getFileHandle('profile.yml', { create: true })).createWritable();
+        await w.write(text); await w.close();
+        markSaved(btn); return;
+      } catch (e) { $('psaveHelp').textContent = 'Couldn\'t save: ' + e.message; }
+    }
+    download('profile.yml', text, 'text/yaml');
+  };
+  $('psave2').onclick = function () { $('psave').click(); };
+  $('pcopy').onclick = function () { copy(toYaml(P), this); };
+
+  // ======================================================== 2 UPLOAD + 3 ORGANIZE
+  var tray = [];
+  // Same rules as GUESS_RULES in tools/taxassist.py; a first guess only, the AI confirms.
+  var RULES = [
+    [/w-?2/, 'W-2 (wages)', 'income_docs'],
+    [/1099-?nec|1099-?k|1099-?misc/, '1099 for business income', 'income_docs'],
+    [/1099-?r|1099-?g|ssa-?1099/, '1099 (retirement / government)', 'income_docs'],
+    [/1099|consolidated|brokerage|invest|acorns|stash|wealthfront|robinhood|fidelity|schwab|vanguard|etrade|coinbase/, 'Investment 1099', 'investment_services'],
+    [/1098-?e|student.?loan|aidvantage|nelnet|mohela|navient/, '1098-E (student loan interest)', 'loans'],
+    [/1098-?t|tuition/, '1098-T (tuition)', 'income_docs'],
+    [/1098|mortgage|property.?tax/, 'Mortgage / property tax', 'income_docs'],
+    [/5498|hsa|1095/, 'HSA / health coverage form', 'income_docs'],
+    [/1040|return|directpay|confirmation|e-?file|4868|extension/, 'Filed return or confirmation', 'filed_returns'],
+    [/amazon|best.?buy|newegg|laptop|monitor|keyboard|mouse|hardware|computer|printer|desk|chair/, 'Equipment receipt', 'hardware_expenses'],
+    [/invoice|receipt|order|subscription|billing|statement/, 'Expense receipt', 'software_expenses']
+  ];
+  var FORM_FOLDERS = { income_docs: 1, investment_services: 1, loans: 1 };
+  function guessYear(low, folder) {
+    var bare = low.match(/(?:^|\D)(20\d\d)(?![-_.]?(?:0[1-9]|1[0-2])[-_.]?\d\d)(?!\d)/);
+    if (bare) return +bare[1];
+    var dated = low.match(/(20\d\d)[-_.]?(0[1-9]|1[0-2])[-_.]?([0-2]\d|3[01])/);
+    if (dated) return FORM_FOLDERS[folder] ? +dated[1] - 1 : +dated[1];
+    return null;
+  }
+  function guess(name) {
+    var low = name.toLowerCase();
+    if (/\.csv$/.test(low)) return { kind: 'Ledger or export (CSV)', folder: null, year: guessYear(low, null) };
+    for (var k = 0; k < RULES.length; k++) if (RULES[k][0].test(low)) return { kind: RULES[k][1], folder: RULES[k][2], year: guessYear(low, RULES[k][2]) };
+    return { kind: 'Unknown: AI will open it', folder: null, year: guessYear(low, null) };
+  }
+  function size(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function fileItem(f) {
+    var g = f.guess || guess(f.name), ext = (f.name.match(/\.([a-z0-9]{1,4})$/i) || [0, 'file'])[1];
+    var dest = g.folder ? 'organized/' + (g.year || '&lt;YEAR&gt;') + '_TaxDocs/' + g.folder + '/' : 'AI decides after reading it';
+    return '<li><span class="ext">' + esc(ext) + '</span><span class="fname">' + esc(f.name) + '</span><span class="meta"><span class="chip">' + esc(g.kind) + '</span> → ' + dest +
+      (f.size != null ? ' · ' + size(f.size) : '') + (f.modified ? ' · ' + esc(f.modified) : '') + '</span></li>';
+  }
+  async function saveFiles(files) {
+    var inbox = await root.getDirectoryHandle('inbox', { create: true }), existing = {};
+    for await (var e of inbox.values()) existing[e.name] = 1;
+    for (var k = 0; k < files.length; k++) {
+      var f = files[k], name = f.name, n = 2;
+      while (existing[name]) name = f.name.replace(/(\.[^.]*)?$/, ' (' + (n++) + ')$1');
+      existing[name] = 1;
+      var w = await (await inbox.getFileHandle(name, { create: true })).createWritable();
+      await w.write(f); await w.close();
+    }
+  }
+  async function liveInbox() {
+    var out = [], inbox = await root.getDirectoryHandle('inbox', { create: true });
+    for await (var e of inbox.values()) {
+      if (e.kind !== 'file' || e.name.charAt(0) === '.' || e.name === 'README.md') continue;
+      var f = await e.getFile();
+      out.push({ name: e.name, size: f.size, modified: new Date(f.lastModified).toISOString().slice(0, 16).replace('T', ' ') });
+    }
+    return out.sort(function (a, b) { return a.name.localeCompare(b.name); });
+  }
+  function renderInbox(list, live) {
+    $('badge').hidden = !list.length; $('badge').textContent = list.length;
+    $('inbox').innerHTML = list.length ? list.map(fileItem).join('') : '<li class="empty">Nothing waiting.</li>';
+    $('inboxSub').innerHTML = live ? 'Live view of <code>my_tax_files/inbox/</code>. The arrow is a first guess; the AI checks each file.'
+      : S ? 'As of the last snapshot (' + esc(S.generated) + '). The arrow is a first guess; the AI checks each file.'
+      : 'Double-click <b>Start-TaxAssistUS</b> for your computer (<b>_Windows</b>, <b>_Mac</b> or <b>_Linux</b>) to show the inbox here.';
+  }
+  async function refreshInbox() {
+    renderConn();
+    if (root) { try { renderInbox(await liveInbox(), true); return; } catch (e) { root = null; renderConn(); } }
+    renderInbox(S ? S.inbox : [], false);
+  }
+  function renderTray() {
+    $('trayCard').hidden = !tray.length;
+    $('tray').innerHTML = tray.map(function (f) { return fileItem({ name: f.name, size: f.size }); }).join('');
+    $('trayHelp').innerHTML = 'Copy ' + (tray.length === 1 ? 'this file' : 'these ' + tray.length + ' files') + ' into <code>' + esc(S && S.inboxPath || 'TaxAssistUS/my_tax_files/inbox') + '</code>. That folder is the upload.';
+  }
+  async function take(list) {
+    var files = [].slice.call(list);
+    if (!files.length) return;
+    if (root) { try { await saveFiles(files); await refreshInbox(); return; } catch (e) { renderConn('Couldn\'t save: ' + esc(e.message)); } }
+    tray = tray.concat(files); renderTray();
+  }
+  $('pick').onclick = function () { $('files').click(); };
+  $('headUpload').onclick = function () { if (current !== 'upload') location.hash = 'upload'; $('files').click(); };
+  $('files').onchange = function (e) { take(e.target.files); e.target.value = ''; };
+  var drop = $('drop');
+  drop.addEventListener('dragover', function (e) { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+  drop.addEventListener('drop', function (e) { e.preventDefault(); drop.classList.remove('over'); take(e.dataTransfer.files); });
+  $('copyPath').onclick = function () { copy(S && S.inboxPath || 'TaxAssistUS/my_tax_files/inbox', this); };
+  $('trayDone').onclick = function () { tray = []; location.reload(); };
+
+  function renderOrganized() {
+    var years = S ? S.years : [];
+    $('years').innerHTML = years.length ? years.map(function (y) {
+      var state = y.problemCount ? '<span class="state bad"><i aria-hidden="true">!</i>' + y.problemCount + ' problem' + (y.problemCount > 1 ? 's' : '') + '</span>'
+        : y.warningCount ? '<span class="state warn"><i aria-hidden="true">?</i>' + y.warningCount + ' to review</span>' : '<span class="state ok"><i aria-hidden="true">✓</i>Checks pass</span>';
+      var kv = function (obj, fmt) { return Object.keys(obj).map(function (k) { return '<div><span>' + esc(fmt(k)) + '</span><b class="' + (obj[k] ? '' : 'z') + '">' + obj[k] + '</b></div>'; }).join(''); };
+      var base = 'my_tax_files/' + y.folder + '/';
+      var reports = y.reports.map(function (r) { return '<a href="' + base + encodeURIComponent(r) + '">' + esc(r.replace(/^\d{4}_/, '').replace(/\.html$/, '').replace(/_/g, ' ')) + '</a>'; }).join('');
+      return '<article class="year"><div class="top"><h3>' + y.year + '</h3>' + state + '<button type="button" data-est="' + y.year + '">Estimate ' + y.year + ' →</button></div>' +
+        '<div class="fine">Documents</div><div class="kv">' + kv(y.folders, function (k) { return k.replace(/_/g, ' '); }) + '</div>' +
+        '<div class="fine" style="margin-top:6px">Ledger rows</div><div class="kv">' + kv(y.ledgers, function (k) { return k.replace('_' + y.year + '.csv', '').replace(/_/g, ' '); }) + '</div>' +
+        (y.problems.length ? '<ul class="fine" style="margin:6px 0 0;padding-left:18px">' + y.problems.slice(0, 5).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>' : '') +
+        '<div class="links">' + (reports ? '<span class="fine">Reports:</span>' + reports : '') + '<a href="' + base + '">Open folder</a></div></article>';
+    }).join('') : '<p class="empty">No year folders yet. Run <code>python3 tools/taxassist.py init ' + thisYear + '</code>.</p>';
+    [].forEach.call($('years').querySelectorAll('[data-est]'), function (b) { b.onclick = function () { loadYear(+b.getAttribute('data-est')); location.hash = 'estimate'; }; });
+    var log = S ? S.log : [];
+    $('log').innerHTML = log.length ? '<thead><tr><th>When</th><th>Was</th><th>Now</th><th>What</th></tr></thead><tbody>' + log.slice(0, 12).map(function (r) {
+      return '<tr><td style="white-space:nowrap">' + esc(r['Date Organized']) + '</td><td>' + esc(r['Original Name']) + '</td><td>' + esc(r['New Location']) + '</td><td>' + esc(r['Detected As']) + (r['Ledger Updated'] ? '<br><span class="fine">+ ' + esc(r['Ledger Updated']) + '</span>' : '') + '</td></tr>';
+    }).join('') + '</tbody>' : '<tbody><tr><td class="empty">Nothing organized yet.</td></tr></tbody>';
+  }
+
+  // ======================================================== 3b AI ASSISTANT
+  // mode: 'desktop' = official desktop app that can work in a local folder (preferred)
+  //       'web' = website only: you upload files · 'local' = runs offline on this computer
+  // App details checked October 2026; menu names change, so steps stay general.
+  var LINK = function (href, text) { return '<a class="ext-link" href="' + href + '" target="_blank" rel="noopener noreferrer">' + text + '<span class="sr"> (opens in a new tab)</span></a>'; };
+  var AIS = {
+    claude: { name: 'Claude', mode: 'desktop', tag: 'Anthropic · Claude Desktop for Mac and Windows', steps: [
+      'Download <b>Claude Desktop</b> from ' + LINK('https://claude.ai/download', 'claude.ai/download') + ' and sign in.',
+      'Copy <b>prompt 1</b> below and paste it in. It tells Claude to read <code>AGENTS.md</code>, the rules every assistant follows.',
+      'Let it search the web when checking tax figures, so it can use irs.gov and your state\'s site.',
+      'Privacy: Settings → Privacy → review the model-training setting.'],
+      folderHow: 'In Claude Desktop, open <b>Cowork</b> and choose this folder when it asks which folder to work in.',
+      web: ['claude.ai', 'Go to <b>claude.ai</b> → <b>Projects</b> → <b>Create project</b> ("Tax Assist US {Y}").', 'Paste the setup instructions into <b>Set project instructions</b>.', 'Add the files listed below to the project knowledge, and turn on <b>Web search</b>.'],
+      cli: ['Claude Code', 'claude', 'reads <code>CLAUDE.md</code>, which loads <code>AGENTS.md</code>'] },
+    chatgpt: { name: 'ChatGPT', mode: 'desktop', tag: 'OpenAI · ChatGPT desktop app for Mac and Windows (includes Codex)', steps: [
+      'Download the <b>ChatGPT desktop app</b> from ' + LINK('https://chatgpt.com/download', 'chatgpt.com/download') + ' and sign in. (On a Mac the installer may be named Codex.)',
+      'Copy <b>prompt 1</b> below and paste it in. Codex reads <code>AGENTS.md</code> on its own; prompt 1 makes sure.',
+      'Ask it to search the web when checking tax figures.',
+      'Privacy: Settings → Data controls → turn off <b>Improve the model for everyone</b>.'],
+      folderHow: 'In the ChatGPT app, open a local folder and pick this one. Allow access to just this folder.',
+      web: ['chatgpt.com', 'Go to <b>chatgpt.com</b> → <b>Projects</b> → <b>New project</b> ("Tax Assist US {Y}").', 'Paste the setup instructions into the project\'s <b>Instructions</b>.', 'Add the files listed below, and turn on <b>Search</b> for tax figures.'],
+      cli: ['Codex CLI', 'codex', 'reads <code>AGENTS.md</code> automatically'] },
+    gemini: { name: 'Gemini', mode: 'desktop', tag: 'Google · Gemini app for Mac (Apple Silicon, macOS 15+) and Windows', steps: [
+      'Install the <b>Gemini app</b>: Mac from ' + LINK('https://gemini.google/mac/', 'gemini.google/mac') + '; Windows from Google\'s Gemini download page.',
+      'Copy <b>prompt 1</b> below and paste it in. It tells Gemini to read <code>AGENTS.md</code> first.',
+      'Gemini searches Google on its own. Ask it to cite the official page (irs.gov, your state\'s .gov site).',
+      'Privacy: turn off <b>Gemini Apps Activity</b> (Keep Activity) at myactivity.google.com/product/gemini.'],
+      folderHow: 'In the Gemini app, share this folder with it. On a Mac, also turn on Gemini under System Settings → Privacy &amp; Security → Accessibility. On Windows, turn on local file access in the app. Menu names can vary by version.',
+      web: ['gemini.google.com', 'Go to <b>gemini.google.com</b> → <b>Gems</b> → <b>New Gem</b> ("Tax Assist US {Y}").', 'Paste the setup instructions into the Gem\'s <b>Instructions</b>.', 'Add the files listed below under <b>Knowledge</b>.'],
+      cli: ['Gemini CLI', 'gemini', 'reads <code>GEMINI.md</code>, which loads <code>AGENTS.md</code>'] },
+    grok: { name: 'Grok (website only)', mode: 'web', tag: 'xAI · website and mobile. No official desktop app that opens local folders yet', steps: [
+      'Go to <b>grok.com</b> → <b>Projects</b> → new project "Tax Assist US {Y}". Menu names can differ by plan.',
+      'Paste the setup instructions into the project\'s <b>Instructions</b>.',
+      'Upload the files listed below under <b>Sources</b>.',
+      'Use web search or <b>DeepSearch</b> for tax figures, and insist on official .gov sources over posts and blogs.',
+      'Privacy: Settings → Data controls → turn off using your data to improve the model. Skip unofficial "Grok for Mac/Windows" downloads.'] },
+    gemma: { name: 'Gemma (offline)', mode: 'local', tag: 'Google\'s open model · runs on your computer, so nothing leaves it', steps: [
+      'Install <b>Ollama</b> (ollama.com) or <b>LM Studio</b> (lmstudio.ai).',
+      'Download a Gemma model that fits your memory, e.g. <code>ollama pull gemma4:e4b</code> (8 GB laptops), <code>gemma4:12b</code> (16 GB), or <code>gemma4:26b</code> (32 GB+). Check the Ollama library for current tags.',
+      'Raise the context window so it can hold the instructions and your data: in <code>ollama run</code> type <code>/set parameter num_ctx 32768</code>, or set Context Length in LM Studio.',
+      'Paste the setup instructions as the system prompt (LM Studio, Open WebUI) or as your first message.',
+      'Give it text, not files: paste <code>python3 tools/taxassist.py summary {Y}</code> output, a CSV, or a document\'s text.',
+      'It can\'t browse or move files, and small models slip on arithmetic. Let step 4 do the math and have Gemma explain, sort and draft.'] }
+  };
+  function aiFiles(Y) {
+    var yr = (S && S.years || []).filter(function (x) { return x.year === Y; })[0];
+    var list = ['my_tax_files/profile.yml'];
+    if (yr) Object.keys(yr.csv).forEach(function (n) { if (yr.ledgers[n]) list.push('my_tax_files/' + yr.folder + '/' + n); });
+    else list.push('my_tax_files/organized/' + Y + '_TaxDocs/*.csv');
+    list.push('tools/tax_engine.js', 'guides/1_files.md, guides/2_taxes.md');
+    return list;
+  }
+  function aiPrompts(key, Y, ST) {
+    var a = AIS[key], st = ST || 'my state';
+    if (a.mode === 'local') return [
+      ['Start', 'Follow the instructions I gave you. Here is my profile.yml and the output of `taxassist.py summary ' + Y + '`:\n\n[paste both]\n\nIn five bullets: what you see, what\'s missing, and what I should do next.'],
+      ['Identify a document', 'Here is a document from my inbox:\n\n[paste its text, or attach the image]\n\nTell me what it is, the issuer, the amounts, and the tax year it belongs to; a standard file name (guides/1_files.md rules); the subfolder; the ledger row as a CSV line; and the exact `python3 tools/taxassist.py organize` command to run.'],
+      ['Explain my estimate', 'Here is my ' + Y + ' estimate from Tax Assist US (step 4, "Copy as text"):\n\n[paste]\n\nExplain which lines drive the result and what I could legally change to owe less. Don\'t redo the arithmetic. You can\'t browse, so list any figure I should verify on irs.gov or ' + st + '\'s revenue site.'],
+      ['Check my state', 'I live in ' + st + '. List what I should look up on its revenue website for tax year ' + Y + ': rate or brackets, standard deduction, exemptions, credits, differences from federal, estimate and extension rules, deadlines. You can\'t browse, so give me the questions and where to look. Don\'t state figures as fact.'],
+      ['Is this deductible?', '[item, amount, how I use it]: is it deductible for my business? Answer yes/no/partly, the rule, the Schedule C line, the Business Use %, and the record I need. Give me the ledger row as a CSV line.']
+    ];
+    return [
+      ['Start', 'Follow the project instructions (Tax Assist US). Read my profile.yml and the ' + Y + ' ledgers I added. In five bullets: what you see, what\'s missing, and what I should do next.'],
+      ['Organize the inbox', 'I\'m uploading files from my_tax_files/inbox/. For each one, tell me what it is, the issuer, the amounts, and the tax year it belongs to (open it; don\'t trust the name). Give me a standard file name (guides/1_files.md), the subfolder, and the ledger row(s) as CSV lines for the right ledger. Then list one `python3 tools/taxassist.py organize "<inbox name>" <YEAR> <subfolder> --name <new_name> --as "<what>" --ledger <csv>` command per file for me to run in the TaxAssistUS folder. Leave out anything you\'re unsure about and ask me.'],
+      ['What will I owe?', 'Using profile.yml, the ' + Y + ' ledgers and tax_engine.js, estimate my ' + Y + ' federal and ' + st + ' tax. Search official sources (irs.gov, ' + st + '\'s revenue site) for anything the engine doesn\'t cover and cite them. Show the math in a table, name the three biggest drivers, and say what would change the answer most.'],
+      ['Check my state', 'Search ' + st + '\'s official revenue website for tax year ' + Y + ' individual income tax rules: rate or brackets, standard deduction, exemptions, credits, differences from federal, estimate and extension rules, deadlines, and any late changes in its newsroom. Cite each with its URL, give me the rows for ' + Y + '_research_notes.md, and tell me what the Tax Assist US estimator misses for me.'],
+      ['Mid-year W-4 check', 'My pay stubs show [YTD wages, federal withheld, state withheld] after [N] of [M] paychecks. Project the full year and tell me exactly what to put in W-4 Step 4(c) to owe about $0.'],
+      ['Is this deductible?', '[item, amount, how I use it]: is it deductible for my business? Answer yes/no/partly, the rule, the Schedule C line, the Business Use %, and the record I need. If yes, give me the ledger row as a CSV line.']
+    ];
+  }
+  // For assistants working inside this project's folder (desktop apps and terminal tools)
+  function folderPrompts(Y, ST) {
+    var st = ST || 'my state', dir = 'my_tax_files/organized/' + Y + '_TaxDocs/';
+    return [
+      ['Start', 'This folder is my Tax Assist US project. Read AGENTS.md first and follow it for everything. Then read my_tax_files/profile.yml and look in my_tax_files/inbox/ and my_tax_files/organized/. In five bullets: what you see, what\'s missing, and what I should do next. Don\'t change any files yet.'],
+      ['Organize the inbox', 'Do the "Organize the inbox" task from AGENTS.md for every file in my_tax_files/inbox/: open each one, work out what it is and which tax year it belongs to, give it a standard name (guides/1_files.md), file it in my_tax_files/organized/<YEAR>_TaxDocs/, add the matching ledger rows, and log every move. If you can run commands, use `python3 tools/taxassist.py organize`, then `check ' + Y + '` and `status`. If you can\'t move files here, give me a table and the exact commands to run instead. Leave anything you\'re unsure about in the inbox and ask me.'],
+      ['What will I owe?', 'Using my_tax_files/profile.yml, the ledgers in ' + dir + ' and tools/tax_engine.js, estimate my ' + Y + ' federal and ' + st + ' tax. Search official sources (irs.gov, ' + st + '\'s revenue site) for anything the engine doesn\'t cover and cite them. Show the math in a table, name the three biggest drivers, and say what would change the answer most.'],
+      ['Check my state', 'Search ' + st + '\'s official revenue website for tax year ' + Y + ' individual income tax rules: rate or brackets, standard deduction, exemptions, credits, differences from federal, estimate and extension rules, deadlines, and any late changes in its newsroom. Cite each with its URL, save the rows to ' + dir + Y + '_research_notes.md, and tell me what the Tax Assist US estimator misses for me.'],
+      ['Mid-year W-4 check', 'My pay stubs show [YTD wages, federal withheld, state withheld] after [N] of [M] paychecks. Project the full year and tell me exactly what to put in W-4 Step 4(c) to owe about $0.'],
+      ['Is this deductible?', '[item, amount, how I use it]: is it deductible for my business? Answer yes/no/partly, the rule, the Schedule C line, the Business Use %, and the record I need. If yes, add the row to the right ledger in ' + dir + '.']
+    ];
+  }
+  var ICON_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
+  var ICON_DONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>';
+  function iconCopyBtn(attrs, label) { return '<button type="button" class="iconbtn" ' + attrs + ' aria-label="' + esc(label) + '" title="Copy">' + ICON_COPY + '</button>'; }
+  function copyIcon(text, btn) {
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(function () {
+      btn.innerHTML = ICON_DONE; btn.classList.add('done'); btn.title = 'Copied';
+      setTimeout(function () { btn.innerHTML = ICON_COPY; btn.classList.remove('done'); btn.title = 'Copy'; }, 1500);
+    }, function () {});
+  }
+  function promptList(items) {
+    return '<ol class="plist">' + items.map(function (p, i) {
+      return '<li><div class="ph"><span class="pn" aria-hidden="true">' + (i + 1) + '</span><span class="t">' + esc(p[0]) + '</span>' +
+        iconCopyBtn('data-copy="' + i + '"', 'Copy prompt ' + (i + 1) + ': ' + p[0]) + '</div><div class="prompt">' + esc(p[1]) + '</div></li>';
+    }).join('') + '</ol>';
+  }
+  function bindCopies(root, items) {
+    [].forEach.call(root.querySelectorAll('[data-copy]'), function (b) { b.onclick = function () { copyIcon(items[+b.getAttribute('data-copy')][1], b); }; });
+  }
+  // The project folder (where TaxAssistUS.html, AGENTS.md and my_tax_files/ live)
+  function projectPath() { return S && S.privatePath ? S.privatePath.replace(/[\\\/]my_tax_files[\\\/]?$/, '') : null; }
+  var UP_BTN = '<button type="button" class="inline-up" data-upload-btn>Upload files</button>';
+  function uploadStep() {
+    return '<li>Add your tax documents with the ' + UP_BTN + ' button (top right of this page). They go into <code>my_tax_files/inbox/</code>, which your AI can see. ' +
+      'Then copy <b>prompt 2</b> to have it organize them.</li>';
+  }
+  function whereStep(a) {
+    var path = projectPath();
+    return '<li><div class="where"><b class="wt">Run your AI in this project\'s folder</b>' +
+      '<div class="pathrow"><code>' + esc(path || 'the TaxAssistUS folder (where TaxAssistUS.html is)') + '</code>' + (path ? iconCopyBtn('data-copypath', 'Copy folder path') : '') + '</div>' +
+      '<p>' + a.folderHow + '</p><p>That\'s where its instructions (<code>AGENTS.md</code>) and your files are. Grant only this folder, nothing wider.</p></div></li>';
+  }
+  var moreOpen = false;
+  function renderAI() {
+    var key = AIS[P.ai_assistant] ? P.ai_assistant : null;
+    // Desktop apps first; website-only and offline options sit behind "Other options"
+    var chip = function (k) { return '<button type="button" data-ai="' + k + '" aria-pressed="' + (k === key) + '">' + esc(AIS[k].name) + '</button>'; };
+    var main = Object.keys(AIS).filter(function (k) { return AIS[k].mode === 'desktop'; }), more = Object.keys(AIS).filter(function (k) { return AIS[k].mode !== 'desktop'; });
+    var showMore = moreOpen || more.indexOf(key) >= 0;
+    $('aiPick').innerHTML = main.map(chip).join('') + (showMore ? more.map(chip).join('') :
+      '<button type="button" class="linkish" id="aiMore">Other options (Grok, offline Gemma)</button>');
+    if ($('aiMore')) $('aiMore').onclick = function () { moreOpen = true; renderAI(); };
+    [].forEach.call($('aiPick').querySelectorAll('[data-ai]'), function (b) {
+      b.onclick = function () { P.ai_assistant = b.getAttribute('data-ai'); store.set('profile-draft', P); dirty = true; renderProfile(); renderAI(); };
+    });
+    if (!key) { $('aiBody').innerHTML = '<p class="empty">Choose an assistant to see its setup and prompts. Your choice is saved in profile.yml.</p>'; return; }
+    var a = AIS[key], Y = profileBasics().year, ST = (STATES.filter(function (x) { return x[0] === P.state; })[0] || [])[1];
+    var steps = function (list) { return '<ol class="setup">' + list.map(function (t) { return '<li>' + t.replace(/\{Y\}/g, Y) + '</li>'; }).join('') + '</ol>'; };
+    var setupBtn = '<div class="btns"><button type="button" class="primary" data-setup>Copy setup instructions</button></div><p class="fine">' +
+      (S && S.agentsText ? 'Copies the full <code>AGENTS.md</code> (the rules every assistant follows).' : 'Run the Start launcher first so this can copy <code>AGENTS.md</code>; or open that file and copy it yourself.') + '</p>';
+    var files = '<h3 class="h3">Files to upload</h3><p class="fine" style="margin:0 0 6px">Websites can\'t see the folder on your computer (a desktop app can), so you upload these by hand. First add your tax documents here with the ' + UP_BTN + ' button (top right); they collect in <code>my_tax_files/inbox/</code>. Then upload to the website:</p>' +
+      '<ul class="fine" style="margin:0;padding-left:18px">' + aiFiles(Y).map(function (f) { return '<li><code>' + esc(f) + '</code></li>'; }).join('') +
+      '<li>the files waiting in <code>my_tax_files/inbox/</code> (to organize them)</li></ul><p class="fine">Black out SSNs and account numbers first.</p>';
+    var lists = {}, html = '<p class="ai-tag">' + esc(a.tag) + '</p>';
+    if (a.mode === 'desktop') {
+      lists.main = folderPrompts(Y, ST); lists.web = aiPrompts(key, Y, ST);
+      html += '<h3 class="h3">Set up once</h3><ol class="setup"><li>' + a.steps[0] + '</li>' + whereStep(a) +
+        '<li>' + a.steps[1] + '</li>' + uploadStep() +
+        a.steps.slice(2).map(function (t) { return '<li>' + t.replace(/\{Y\}/g, Y) + '</li>'; }).join('') + '</ol>' +
+        '<h3 class="h3">Prompts</h3><div data-list="main">' + promptList(lists.main) + '</div>' +
+        '<details class="alt"><summary>Can\'t install apps (e.g. a work computer)? Use ' + esc(a.web[0]) + ' in your browser</summary><p class="fine">Only if the desktop app isn\'t an option. The website can\'t open folders, so you upload files instead.</p>' +
+        steps(a.web.slice(1)) + setupBtn + files + '<h3 class="h3">Prompts for the website</h3><div data-list="web">' + promptList(lists.web) + '</div></details>' +
+        '<details class="alt"><summary>On Linux, or prefer the terminal? Use ' + esc(a.cli[0]) + '</summary><p>' + a.cli[0] + ' ' + a.cli[2] + '. Open a terminal in this project\'s folder' + (projectPath() ? ' (<code>cd "' + esc(projectPath()) + '"</code>)' : '') + ', run <code>' + a.cli[1] + '</code>, and use the same numbered prompts above.</p></details>';
+    } else {
+      lists.main = aiPrompts(key, Y, ST);
+      html += '<h3 class="h3">Set up once</h3>' + steps(a.steps) + setupBtn + (a.mode === 'web' ? files : '') + '<h3 class="h3">Prompts</h3><div data-list="main">' + promptList(lists.main) + '</div>';
+    }
+    if (dirty) html += '<div class="btns" style="margin-top:12px"><button type="button" id="aiSave">Save my choice to profile.yml</button></div>';
+    $('aiBody').innerHTML = html;
+    Object.keys(lists).forEach(function (k) { bindCopies($('aiBody').querySelector('[data-list="' + k + '"]'), lists[k]); });
+    [].forEach.call($('aiBody').querySelectorAll('[data-setup]'), function (b) {
+      b.onclick = function () { copy(S && S.agentsText ? S.agentsText : 'Read and follow AGENTS.md in my TaxAssistUS folder.', b); };
+    });
+    [].forEach.call($('aiBody').querySelectorAll('[data-upload-btn]'), function (b) { b.onclick = function () { $('headUpload').click(); }; });
+    [].forEach.call($('aiBody').querySelectorAll('[data-copypath]'), function (b) { b.onclick = function () { copyIcon(projectPath(), b); }; });
+    if ($('aiSave')) $('aiSave').onclick = function () { $('psave').click(); setTimeout(renderAI, 300); };
+  }
+
+  // ======================================================== 4 ESTIMATE
+  var SAMPLE = { year: 2026, wages: 72000, fedWithheld: 7400, stateWithheld: 1500, bizGross: 4000, bizExpenses: 2500, ordDiv: 300, qualDiv: 200, ltGain: 400 };
+  var ESECTIONS = [
+    ['Basics (from your profile)', true, [
+      ['status', 'Filing status', 'select', Object.keys(E.STATUS_LABELS).map(function (k) { return [k, E.STATUS_LABELS[k]]; })],
+      ['dependents', 'Children under 17', 'n'], ['age65Count', 'People age 65+', 'n'],
+      ['stateMode', 'State', 'select', Object.keys(E.STATES).map(function (k) { return [k, E.STATES[k].label]; })],
+      ['stateRate', 'State rate (%)', 'n', '', 'flat'], ['stateDeduction', 'State deduction / exemptions', 'n', 'Leave 0 for Arizona', 'state'],
+      ['paychecksLeft', 'Paychecks left this year', 'n', 'For the W-4 suggestion']]],
+    ['Jobs (W-2)', true, [['wages', 'Wages: Box 1', 'n', 'All W-2s. For this year, project the full year'], ['fedWithheld', 'Federal withheld: Box 2', 'n'], ['stateWithheld', 'State withheld: Box 17', 'n'], ['medicareWages', 'Medicare wages: Box 5', 'n', 'Optional'], ['ssWages', 'Social Security wages: Box 3', 'n', 'Optional']]],
+    ['Business (Schedule C)', true, [['bizGross', 'Business income', 'n'], ['bizExpenses', 'Business expenses', 'n']]],
+    ['Investments (1099s)', false, [['interest', 'Taxable interest', 'n'], ['ordDiv', 'Ordinary dividends (1a)', 'n'], ['qualDiv', 'Qualified dividends (1b)', 'n'], ['sec199aDiv', 'Section 199A dividends', 'n'], ['stGain', 'Net short-term gain (loss)', 'n'], ['ltGain', 'Net long-term gain (loss)', 'n'], ['foreignTax', 'Foreign tax paid', 'n'], ['exemptInt', 'Exempt-interest dividends', 'n']]],
+    ['Other income, deductions, credits', false, [['otherIncome', 'Other taxable income', 'n', 'Unemployment, K-1 share, rental net, etc.'], ['studentLoanInterest', 'Student loan interest (1098-E)', 'n'], ['hsaDirect', 'HSA outside payroll', 'n'], ['otherAdjustments', 'Other adjustments', 'n'], ['itemized', 'Itemized deductions total', 'n'], ['otherDeductions', 'Other deductions', 'n', 'Tips / overtime deductions'], ['otherCredits', 'Other credits', 'n']]],
+    ['Payments made', false, [['estPayments', 'Federal estimated + extension', 'n'], ['stateEstPayments', 'State estimated', 'n']]],
+    ['What-if', true, [['extraPretax', 'Extra pre-tax 401(k)', 'n', 'Lowers Box 1 wages']]]
+  ];
+  var eform = $('eform');
+  eform.innerHTML = ESECTIONS.map(function (sec) {
+    return '<details' + (sec[1] ? ' open' : '') + '><summary>' + sec[0] + '</summary><div class="efields">' + sec[2].map(function (f) {
+      var ctl = f[2] === 'select' ? '<select name="' + f[0] + '">' + f[3].map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>'
+        : '<input type="number" step="any" inputmode="decimal" name="' + f[0] + '" placeholder="0">';
+      var hint = f[2] === 'select' ? '' : f[3];
+      return '<label class="f"' + (f[4] ? ' data-show="' + f[4] + '"' : '') + '><span>' + f[1] + '</span>' + ctl + (hint ? '<small>' + hint + '</small>' : '') + '</label>';
+    }).join('') + '</div></details>';
+  }).join('');
+  function read() {
+    var o = {};
+    [].forEach.call(eform.elements, function (el) { if (el.name) o[el.name] = el.tagName === 'SELECT' ? el.value : (el.value === '' ? 0 : parseFloat(el.value)); });
+    o.year = +$('taxYear').value; return o;
+  }
+  function write(o) {
+    if (o.year != null) $('taxYear').value = String(o.year);
+    [].forEach.call(eform.elements, function (el) {
+      if (!el.name) return;
+      var v = o[el.name];
+      if (el.tagName === 'SELECT') { if (v != null) el.value = String(v); if (!el.value) el.value = el.options[0].value; }
+      else el.value = v ? Math.round(v * 100) / 100 : '';
+    });
+  }
+  function profileBasics() {
+    var p = P, st = p.filing_status;
+    var status = st === 'married_joint' || st === 'qualifying_surviving_spouse' ? 'mfj' : st === 'head_of_household' ? 'hoh' : 'single';
+    var mode = !p.state || NO_TAX[p.state] ? 'none' : p.state === 'AZ' ? 'az' : 'flat';
+    var yr = E.TAX_YEARS[p.tax_year] ? p.tax_year : +Object.keys(E.TAX_YEARS).pop();
+    var left = 0;
+    if (yr === thisYear) { var now = new Date(), end = new Date(thisYear, 11, 31); left = Math.max(0, Math.round((p.paychecks_per_year || 26) * (end - now) / (365 * 864e5))); }
+    return { year: yr, status: status, dependents: p.dependents_under_17 || 0, age65Count: p.age_65_or_older || 0, stateMode: mode, stateRate: mode === 'flat' ? (p.state_effective_rate || 0) : 0, paychecksLeft: left };
+  }
+  function applyProfileToEstimate() { var o = read(), b = profileBasics(); b.year = o.year || b.year; Object.assign(o, b); write(o); estChanged(); }
+
+  var isSample = true;
+  function estChanged() { store.set('estimate-inputs', { inputs: read(), sample: isSample }); if (current === 'estimate') renderEstimate(); }
+  eform.addEventListener('input', function () { isSample = false; estChanged(); });
+
+  function applyTexts(got, fresh) {
+    var json = got.filter(function (g) { return /\.json$/i.test(g.name); })[0];
+    if (json) { try { var o = JSON.parse(json.text); write(o.inputs || o); isSample = false; estChanged(); } catch (e) { $('loaded').innerHTML = '<li>Could not read ' + esc(json.name) + '</li>'; } return; }
+    var cur = isSample || fresh ? Object.assign(profileBasics(), { year: read().year }) : read();
+    var touched = {}, sums = {}, out = [];
+    got.forEach(function (g) {
+      var r = E.importCSV(g.text, g.name), y = g.name.match(/(20\d\d)/);
+      if (y && E.TAX_YEARS[y[1]]) cur.year = +y[1];
+      Object.keys(r.values).forEach(function (k) { touched[k] = 1; sums[k] = (sums[k] || 0) + r.values[k]; });
+      out.push('<li><b>' + esc(g.name) + '</b>: ' + r.label + (r.kind === 'unknown' ? ' (skipped)' : ', ' + r.rows + ' row' + (r.rows === 1 ? '' : 's')) + '</li>');
+    });
+    Object.keys(touched).forEach(function (k) { cur[k] = sums[k]; });
+    if (cur.year !== thisYear) cur.paychecksLeft = 0;
+    write(cur); isSample = false; $('loaded').innerHTML = out.join(''); estChanged();
+  }
+  // The tax year is the one year on this page: it picks the tax tables AND the organized folder.
+  var orgYears = (S && S.years || []).map(function (y) { return y.year; });
+  $('taxYear').innerHTML = Object.keys(E.TAX_YEARS).map(Number).concat(orgYears)
+    .filter(function (y, i, a) { return a.indexOf(y) === i; }).sort(function (a, b) { return b - a; })
+    .map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+  function folderFor(y) { return (S && S.years || []).filter(function (x) { return x.year === +y; })[0]; }
+  function syncYear() {
+    var y = +$('taxYear').value, yr = folderFor(y), rows = 0;
+    if (yr) Object.keys(yr.ledgers).forEach(function (k) { rows += yr.ledgers[k]; });
+    $('yearLoad').hidden = !yr;
+    $('yearLoad').textContent = 'Load my ' + y + ' files';
+    $('yearNote').textContent = !yr ? 'No organized ' + y + ' folder yet. Type numbers below, or run the launcher.'
+      : rows ? rows + ' ledger rows in organized/' + y + '_TaxDocs' : 'No ledger rows in organized/' + y + '_TaxDocs yet. Organize documents first (step 3).';
+  }
+  function loadYear(y) {
+    var yr = folderFor(y);
+    $('taxYear').value = String(y);
+    if (yr) applyTexts(Object.keys(yr.csv).map(function (n) { return { name: n, text: yr.csv[n] }; }), true);
+    else estChanged();
+    syncYear();
+  }
+  $('taxYear').onchange = function () { loadYear(+this.value); };
+  $('yearLoad').onclick = function () { loadYear(+$('taxYear').value); };
+  function readFiles(list) {
+    Promise.all([].slice.call(list).map(function (f) {
+      return new Promise(function (ok) { var fr = new FileReader(); fr.onload = function () { ok({ name: f.name, text: String(fr.result) }); }; fr.onerror = function () { ok({ name: f.name, text: '' }); }; fr.readAsText(f); });
+    })).then(function (got) { applyTexts(got); });
+  }
+  $('cpick').onclick = function () { $('cfiles').click(); };
+  $('cfiles').onchange = function (e) { readFiles(e.target.files); e.target.value = ''; };
+  $('cdrop').addEventListener('dragover', function (e) { e.preventDefault(); });
+  $('cdrop').addEventListener('drop', function (e) { e.preventDefault(); readFiles(e.dataTransfer.files); });
+  $('copyMath').onclick = function () {
+    if (!lastResult) return;
+    var r = lastResult, w = function (l) { return l[0] + ': ' + cents(l[1]); };
+    var text = 'Tax Assist US estimate, ' + r.year + ', ' + E.STATUS_LABELS[r.status] + '\n\nFederal (Form 1040)\n' + r.lines.filter(function (l) { return Math.abs(l[1]) >= 0.005; }).map(w).join('\n') +
+      (r.state.lines.length ? '\n\n' + r.state.label + '\n' + r.state.lines.map(w).join('\n') + '\nState withholding and estimates: ' + cents(-r.state.payments) + '\n' + (r.state.balance >= 0 ? 'State balance due: ' : 'State refund: ') + cents(Math.abs(r.state.balance)) : '') +
+      (r.warnings.length + r.notes.length ? '\n\nNotes\n- ' + r.warnings.concat(r.notes).join('\n- ') : '');
+    copy(text, this);
+  };
+  $('eexport').onclick = function () { var o = read(); download('tax_projection_inputs_' + o.year + '.json', JSON.stringify({ app: 'Tax Assist US', saved: new Date().toISOString(), inputs: o }, null, 2), 'application/json'); };
+  $('ereset').onclick = function () { write(Object.assign({}, SAMPLE, profileBasics(), { year: SAMPLE.year })); isSample = true; $('loaded').innerHTML = ''; estChanged(); };
+  $('eclear').onclick = function () { var c = read(); write(Object.assign(profileBasics(), { year: c.year })); isSample = false; $('loaded').innerHTML = ''; estChanged(); };
+
+  // tooltip + svg helpers
+  var tip = $('tip');
+  function bindTip(el, html) {
+    el.addEventListener('mousemove', function (e) {
+      tip.innerHTML = html; tip.hidden = false;
+      var x = e.clientX + 14, yy = e.clientY + 14;
+      if (x + tip.offsetWidth > innerWidth - 8) x = e.clientX - tip.offsetWidth - 14;
+      if (yy + tip.offsetHeight > innerHeight - 8) yy = e.clientY - tip.offsetHeight - 14;
+      tip.style.left = x + 'px'; tip.style.top = yy + 'px';
+    });
+    el.addEventListener('mouseleave', function () { tip.hidden = true; });
+  }
+  var NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, parent) { var n = document.createElementNS(NS, tag); for (var k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+  function txt(parent, x, yy, s, cls, anchor) { var t = el('text', { x: x, y: yy, 'text-anchor': anchor || 'start', 'class': cls || '' }, parent); t.textContent = s; return t; }
+  function hbarPath(x, yy, w, h) {
+    if (w <= 0) return '';
+    var r = Math.min(4, w, h / 2);
+    return 'M' + x + ',' + yy + 'H' + (x + w - r) + 'Q' + (x + w) + ',' + yy + ' ' + (x + w) + ',' + (yy + r) + 'V' + (yy + h - r) + 'Q' + (x + w) + ',' + (yy + h) + ' ' + (x + w - r) + ',' + (yy + h) + 'H' + x + 'Z';
+  }
+  function vbarPath(x, base, w, end) {
+    var h = Math.abs(end - base);
+    if (h < 0.5) return '';
+    var r = Math.min(4, h, w / 2), d = end < base ? 1 : -1;
+    return 'M' + x + ',' + base + 'V' + (end + d * r) + 'Q' + x + ',' + end + ' ' + (x + r) + ',' + end + 'H' + (x + w - r) + 'Q' + (x + w) + ',' + end + ' ' + (x + w) + ',' + (end + d * r) + 'V' + base + 'Z';
+  }
+  function segPath(x, yy, w, h, rl, rr) {
+    var r = Math.min(4, w / 2); rl = rl ? r : 0; rr = rr ? r : 0;
+    return 'M' + (x + rl) + ',' + yy + 'H' + (x + w - rr) + (rr ? 'Q' + (x + w) + ',' + yy + ' ' + (x + w) + ',' + (yy + rr) : '') + 'V' + (yy + h - rr) + (rr ? 'Q' + (x + w) + ',' + (yy + h) + ' ' + (x + w - rr) + ',' + (yy + h) : '') +
+      'H' + (x + rl) + (rl ? 'Q' + x + ',' + (yy + h) + ' ' + x + ',' + (yy + h - rl) : '') + 'V' + (yy + rl) + (rl ? 'Q' + x + ',' + yy + ' ' + (x + rl) + ',' + yy : '') + 'Z';
+  }
+  function width(svg) { return Math.max(300, svg.parentNode.clientWidth - 32); }
+  function clear(svg, w, h) { while (svg.firstChild) svg.removeChild(svg.firstChild); svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h); svg.setAttribute('height', h); }
+
+  function drawFlow(r) {
+    var svg = $('flow'), W = width(svg), H = 44;
+    clear(svg, W, H);
+    var parts = [
+      ['You keep', Math.max(0, r.kept), 'var(--s1)'], ['Federal income tax', Math.max(0, r.fedIncomeTaxNet + r.addlMedicare + r.niit), 'var(--s2)'],
+      ['State income tax', Math.max(0, r.state.tax), 'var(--s3)'], ['Social Security & Medicare (paycheck)', r.fica, 'var(--s4)'], ['Self-employment tax', r.seTax, 'var(--s5)']
+    ].filter(function (p) { return p[1] > 0; });
+    var total = parts.reduce(function (s, p) { return s + p[1]; }, 0) || 1, x = 0, avail = W - 2 * (parts.length - 1);
+    parts.forEach(function (p, i) {
+      var w = Math.max(2, p[1] / total * avail);
+      el('path', { d: segPath(x, 4, w, 28, i === 0, i === parts.length - 1), fill: p[2] }, svg);
+      if (i === 0 && w > 74) txt(svg, x + 8, 23, pct(p[1] / total, 0) + ' kept', 'val').style.fill = '#fff';
+      bindTip(el('rect', { x: x, y: 0, width: w, height: H, 'class': 'hit' }, svg), '<b>' + p[0] + '</b>' + cents(p[1]) + ' · ' + pct(p[1] / total));
+      x += w + 2;
+    });
+    $('flowLegend').innerHTML = parts.map(function (p) { return '<li><i style="background:' + p[2] + '"></i>' + p[0] + ' <b>' + money(p[1]) + '</b></li>'; }).join('');
+    $('flowSub').textContent = 'Out of ' + money(r.gross) + ' gross income, total taxes are ' + money(r.totalTaxes) + ' (' + pct(r.effectiveRate) + ' effective rate). Hover a segment for details.';
+  }
+  function drawBrackets(r) {
+    var svg = $('brackets'), W = width(svg), reached = 0;
+    r.brackets.forEach(function (b, i) { if (b.amount > 0) reached = i; });
+    var rows = r.brackets.slice(0, Math.min(r.brackets.length, reached + 2)), rowH = 46;
+    clear(svg, W, rows.length * rowH);
+    var maxW = rows.reduce(function (m, b) { return Math.max(m, isFinite(b.hi) ? b.hi - b.lo : b.amount); }, 1);
+    var bw = function (v) { return Math.min(W, v / maxW * W); };
+    rows.forEach(function (b, i) {
+      var yy = i * rowH, sz = isFinite(b.hi) ? b.hi - b.lo : Math.max(b.amount, maxW * 0.15);
+      var t = txt(svg, 0, yy + 14, Math.round(b.rate * 100) + '%', 'val');
+      var rest = el('tspan', { dx: 8, 'class': b.amount > 0 ? '' : 'muted' }, t);
+      rest.textContent = b.amount > 0 ? money(b.amount) + ' taxed → ' + money(b.tax) : 'next bracket, from ' + money(b.lo);
+      el('path', { d: hbarPath(0, yy + 22, bw(sz), 14), fill: 'var(--track)' }, svg);
+      if (b.amount > 0) el('path', { d: hbarPath(0, yy + 22, bw(b.amount), 14), fill: 'var(--s1)' }, svg);
+      bindTip(el('rect', { x: 0, y: yy, width: W, height: rowH, 'class': 'hit' }, svg), '<b>' + Math.round(b.rate * 100) + '% bracket</b>Taxable income ' + money(b.lo) + (isFinite(b.hi) ? ' – ' + money(b.hi) : ' and up') + '<br>Yours in it: ' + cents(b.amount) + '<br>Tax: ' + cents(b.tax));
+    });
+    var room = isFinite(r.brackets[reached].hi) ? r.brackets[reached].hi - r.ordinary : 0;
+    $('brSub').textContent = 'Taxable ordinary income ' + money(r.ordinary) + '. Your top dollar is taxed at ' + Math.round(r.marginal * 100) + '%' + (room > 0 ? '; ' + money(room) + ' more before the next bracket.' : '.') +
+      (r.pref > 0 ? ' Qualified dividends and long-term gains (' + money(r.pref) + ') are taxed separately at 0/15/20%.' : '');
+  }
+  function drawWhatIf(r, base) {
+    var svg = $('whatif'), W = width(svg), narrow = W < 520, H = narrow ? 210 : 230;
+    clear(svg, W, H);
+    var steps = narrow ? [0, 2500, 5000, 10000] : [0, 2500, 5000, 10000, 15000];
+    var res = steps.filter(function (s) { return s <= r.limits401k; }).map(function (s) {
+      var x = E.compute(Object.assign({}, base, { extraPretax: (base.extraPretax || 0) + s }));
+      return { s: s, net: x.netBalance, tax: x.fedTotal + x.state.tax };
+    });
+    // Bands: 20px for labels above, plot, 20px for labels below, 36px for the axis labels
+    var top = 20, axis = 36, plotBottom = H - axis - 20;
+    var baseTax = res[0].tax, vals = res.map(function (q) { return q.net; });
+    var max = Math.max(0, Math.max.apply(null, vals)), min = Math.min(0, Math.min.apply(null, vals)), span = max - min || 1;
+    var Y = function (v) { return top + (max - v) / span * (plotBottom - top); }, zero = Y(0), slot = W / res.length, bw = Math.min(24, slot * 0.4);
+    el('line', { x1: 0, x2: W, y1: zero, y2: zero, stroke: 'var(--axis)', 'stroke-width': 1 }, svg);
+    res.forEach(function (q, i) {
+      var cx = i * slot + slot / 2, owe = q.net > 0, end = Y(q.net);
+      el('path', { d: vbarPath(cx - bw / 2, zero, bw, end), fill: owe ? 'var(--owe)' : 'var(--refund)' }, svg);
+      var ly = Math.abs(end - zero) < 1 ? zero - 6 : owe ? end - 6 : end + 15;
+      txt(svg, cx, ly, (narrow ? '' : owe ? 'Owe ' : q.net < 0 ? 'Refund ' : '') + compact(Math.abs(q.net)), 'val', 'middle');
+      txt(svg, cx, H - 20, '+' + compact(q.s), '', 'middle');
+      txt(svg, cx, H - 4, q.s ? 'saves ' + (narrow ? compact(baseTax - q.tax) : money(baseTax - q.tax)) : 'as entered', 'muted', 'middle');
+      bindTip(el('rect', { x: i * slot, y: 0, width: slot, height: H, 'class': 'hit' }, svg), '<b>Extra pre-tax 401(k): ' + money(q.s) + '</b>' + (owe ? 'Owe ' : 'Refund ') + cents(Math.abs(q.net)) + '<br>Tax saved: ' + cents(baseTax - q.tax) + '<br>Take-home drops by about ' + money(q.s - (baseTax - q.tax)));
+    });
+    $('wiSub').textContent = 'Net federal + state result at filing' + (narrow ? ' (bars up = owe, down = refund)' : '') + '. Each pre-tax dollar saves your ' + Math.round(r.marginal * 100) + '% federal rate plus state tax. ' + r.year + ' 401(k) limit: ' + money(r.limits401k) + '.';
+  }
+  function tile(k, v, d, cls) { return '<div class="tile ' + (cls || '') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div>' + (d ? '<div class="d">' + d + '</div>' : '') + '</div>'; }
+  function oweLabel(n) { return Math.abs(n) < 1 ? 'Even' : (n > 0 ? 'Owe ' : 'Refund ') + money(n); }
+  var lastResult = null;
+  function renderEstimate() {
+    var o = read();
+    [].forEach.call(eform.querySelectorAll('[data-show]'), function (l) { var s = l.getAttribute('data-show'); l.hidden = s === 'flat' ? o.stateMode !== 'flat' : o.stateMode === 'none'; });
+    var r = lastResult = E.compute(o);
+    if (!isSample) store.set('estimated', true);
+    $('sampleNote').hidden = !isSample;
+    var t = tile('Projected at filing', oweLabel(r.netBalance), 'Federal + state · ' + r.year + ' · ' + E.STATUS_LABELS[r.status], 'hero') +
+      tile('Federal', oweLabel(r.fedBalance), 'Tax ' + money(r.fedTotal) + ' − paid ' + money(r.fedPayments)) +
+      tile('State', o.stateMode === 'none' ? 'None' : oweLabel(r.state.balance), o.stateMode === 'none' ? 'No state income tax' : 'Tax ' + money(r.state.tax) + ' − paid ' + money(r.state.payments)) +
+      tile('Effective rate', pct(r.effectiveRate), 'All taxes ÷ gross income') + tile('Top federal bracket', Math.round(r.marginal * 100) + '%', 'Rate on your next dollar');
+    if (r.perPaycheck > 0) t += tile('Fix it with W-4', money(r.perPaycheck), 'Extra federal withholding per paycheck (Step 4c) to reach ~$0');
+    $('tiles').innerHTML = t;
+    var msgs = profileNotes(P).filter(function (m) { return m[0] === 'w'; }).map(function (m) { return m[1]; }).concat(r.warnings);
+    $('msgs').innerHTML = msgs.map(function (m) { return '<li class="w"><span class="ic" aria-hidden="true">!</span><span>' + esc(m) + '</span></li>'; }).join('') +
+      r.notes.map(function (m) { return '<li class="n"><span class="ic" aria-hidden="true">i</span><span>' + esc(m) + '</span></li>'; }).join('');
+    $('msgCard').hidden = !(msgs.length + r.notes.length);
+    drawFlow(r); drawBrackets(r); drawWhatIf(r, o);
+    var SUMS = /^(Total income|Adjusted gross|Taxable income|Total federal|Federal balance|Federal refund)/;
+    $('fedTable').innerHTML = '<thead><tr><th>Federal (Form 1040)</th><th style="text-align:right">Amount</th></tr></thead><tbody>' + r.lines.map(function (l) {
+      return '<tr class="' + (SUMS.test(l[0]) ? 'sum' : Math.abs(l[1]) < 0.005 ? 'zero' : '') + '"><td>' + l[0] + '</td><td class="r">' + cents(l[1]) + '</td></tr>';
+    }).join('') + '</tbody>';
+    $('stTitle').textContent = r.state.label;
+    $('stTable').innerHTML = o.stateMode === 'none' ? '<tbody><tr><td>No state income tax on wages.</td></tr></tbody>' :
+      '<tbody>' + r.state.lines.concat([['State withholding and estimates', -r.state.payments], [r.state.balance >= 0 ? 'State balance due' : 'State refund', Math.abs(r.state.balance)]]).map(function (l, i, a) {
+        return '<tr class="' + (i === a.length - 1 ? 'sum' : '') + '"><td>' + l[0] + '</td><td class="r">' + cents(l[1]) + '</td></tr>'; }).join('') + '</tbody>';
+    $('srcNote').textContent = 'Tax tables: ' + r.year + ' (' + r.params.source + ').';
+    renderSteps();
+  }
+
+  // ======================================================== 5 FILE & PLAN
+  // [what to do, why it matters]. Item 2 (index 1) is ticked by the records check.
+  function todoItems(Y) {
+    return [
+      ['Gather your tax forms', 'W-2s from every job, 1099s from your bank and brokers, and a 1098-E if you have student loans. Most arrive by mid-February.'],
+      ['Records check passes', 'Every expense has a receipt and the numbers add up. This one ticks itself.'],
+      ['Your estimate looks right', 'Step 4. It\'s what you\'ll compare your tax software against.'],
+      ['Enter everything in your tax software', 'FreeTaxUSA, TurboTax, etc. Go in this order: your info, W-2s, investments, your business, then deductions. Stuck? Ask your AI for directions (see above).'],
+      ['Your tax software matches your estimate', 'Within a few dollars. If it\'s further off, find out why before you file.'],
+      ['Add your state return', 'Make sure the state wages and withholding match your W-2s.'],
+      ['File by April 15, ' + (Y + 1), 'Need more time? File an extension, but still pay what you owe by April 15.'],
+      ['Pay, or set up your refund', 'Pay at irs.gov/directpay, or pick direct deposit so your refund arrives faster.'],
+      ['Save copies', 'A PDF of your return and the confirmation emails, in organized/' + Y + '_TaxDocs/filed_returns/.']
+    ];
+  }
+  function todoYear() { return lastResult ? lastResult.year : profileBasics().year; }
+  function todoState() { return store.get('checklist-' + todoYear()) || {}; }
+  // Records check: live via `serve` mode's /api/check, otherwise the launcher's last snapshot
+  var checking = false, CHECK_ITEM = 1;
+  function fmtWhen(t) { return t ? t.replace(/^(\d{4}-\d{2}-\d{2}) /, '$1 at ') : 'never'; }
+  function renderCheck(Y, res, state) {
+    var box = $('recCheck'), icon, title, n = res ? res.problems.length : 0, w = res ? (res.warnings ? res.warnings.length : res.warningCount || 0) : 0;
+    if (state === 'running') { icon = 'spin'; title = 'Checking your ' + Y + ' records…'; }
+    else if (state === 'error') { icon = 'bad'; title = 'Couldn\'t reach the local server. Is serve mode still running?'; }
+    else if (!res) { icon = 'idle'; title = 'Not checked yet'; }
+    else if (n) { icon = 'bad'; title = n + ' problem' + (n > 1 ? 's' : '') + ' to fix'; }
+    else { icon = 'ok'; title = 'Records check passed' + (w ? ' (' + w + ' item' + (w > 1 ? 's' : '') + ' to review)' : ''); }
+    box.innerHTML = '<div class="row"><span class="ck ' + icon + '" aria-hidden="true"></span><b>' + esc(title) + '</b>' +
+      (served ? '<button type="button" id="runCheck"' + (state === 'running' ? ' disabled' : '') + '>' + (state === 'running' ? 'Running…' : 'Run check') + '</button>' : '') + '</div>' +
+      '<p class="when">Every expense has a receipt, ledger columns match, totals add up. ' +
+      (served ? 'Last run: ' + fmtWhen(res && res.ranAt) + '.' : 'Last run: ' + fmtWhen(res && res.ranAt) + ' (by the launcher). Run the launcher again to re-check, or start it with <code>serve</code> to check from here.') + '</p>' +
+      (res && n ? '<ul>' + res.problems.slice(0, 6).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>' : '');
+    if ($('runCheck')) $('runCheck').onclick = function () { runCheck(Y); };
+  }
+  function applyCheck(Y, res) {
+    var st = todoState();
+    st[CHECK_ITEM] = res.problems.length === 0;
+    store.set('checklist-' + Y, st);
+    var cb = $('todo').querySelector('input[data-i="' + CHECK_ITEM + '"]');
+    if (cb) { cb.checked = st[CHECK_ITEM]; updateTodo(Y); }
+    renderSteps();
+  }
+  function runCheck(Y) {
+    if (checking) return;
+    checking = true;
+    renderCheck(Y, store.get('check-' + Y), 'running');
+    fetch('api/check?year=' + Y, { cache: 'no-store' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (res) {
+      checking = false; store.set('check-' + Y, res);
+      if (todoYear() === Y) { renderCheck(Y, res); applyCheck(Y, res); }
+    }).catch(function () { checking = false; renderCheck(Y, store.get('check-' + Y), 'error'); });
+  }
+  function startCheck(Y) {
+    if (served) { runCheck(Y); return; } // automatic every time this step opens
+    var yr = folderFor(Y);
+    var res = yr ? { problems: yr.problems, warningCount: yr.warningCount, ranAt: S.generated } : null;
+    renderCheck(Y, res);
+    if (res) applyCheck(Y, res);
+  }
+
+  $('recCopy').onclick = function () { copy($('recPrompt').textContent, this); };
+  // Progress + success message, read from the checkboxes themselves
+  function updateTodo(Y) {
+    var boxes = [].slice.call($('todo').querySelectorAll('input')), n = boxes.filter(function (b) { return b.checked; }).length, all = n === boxes.length;
+    $('todoBar').style.width = (n / boxes.length * 100) + '%';
+    $('todoCount').textContent = n + ' of ' + boxes.length + ' done';
+    var box = $('todoDone'), was = !box.hidden;
+    box.hidden = !all;
+    if (all && !was) {
+      box.innerHTML = '<span class="ic" aria-hidden="true"></span><div><b>Tax year ' + Y + ' is done!</b>' +
+        '<p>Filed, paid, and every record saved. That\'s the hard part: nice work.</p>' +
+        '<p>Next: switch to ' + (Y + 1) + ' and keep dropping documents in the inbox as they arrive, so next spring is quick.</p>' +
+        '<button type="button" class="primary" id="startNext">Start ' + (Y + 1) + ' →</button></div>';
+      $('startNext').onclick = function () {
+        var sel = $('p_tax_year');
+        if (![].some.call(sel.options, function (o) { return +o.value === Y + 1; })) sel.insertAdjacentHTML('beforeend', '<option value="' + (Y + 1) + '">' + (Y + 1) + '</option>');
+        sel.value = String(Y + 1);
+        P.tax_year = Y + 1; store.set('profile-draft', P); dirty = true;
+        renderProfile(); location.hash = 'profile';
+      };
+    }
+  }
+  function renderFile() {
+    if (!lastResult) renderEstimate();
+    var r = lastResult, Y = r.year, N = Y + 1, st = todoState();
+    $('fileLede').innerHTML = 'For tax year <b>' + Y + '</b>: projected <b>' + oweLabel(r.netBalance).toLowerCase() + '</b> (federal ' + oweLabel(r.fedBalance).toLowerCase() + ', state ' + (r.state.mode === 'none' ? 'none' : oweLabel(r.state.balance).toLowerCase()) + '). Change the year in the Estimate step.';
+    $('todo').innerHTML = todoItems(Y).map(function (t, i) { return '<li><label><input type="checkbox" data-i="' + i + '"' + (st[i] ? ' checked' : '') + '><span><b>' + esc(t[0]) + '</b><small class="why">' + esc(t[1]) + '</small></span></label></li>'; }).join('');
+    [].forEach.call($('todo').querySelectorAll('input'), function (b) { b.onchange = function () { var s = todoState(); s[b.getAttribute('data-i')] = b.checked; store.set('checklist-' + Y, s); updateTodo(Y); renderSteps(); }; });
+    updateTodo(Y);
+    startCheck(Y);
+    $('recPrompt').textContent = 'I\'m filing my ' + Y + ' taxes on [FreeTaxUSA / TurboTax / the site you use]. Using my Tax Assist US files (profile.yml and the ' + Y + ' ledgers), walk me through it screen by screen: which section to open, what to enter and the exact amounts, in order. Tell me what the federal and state totals should come out to.';
+    var untaxed = P.income.self_employed || P.income.investments || r.seTax > 0;
+    var rows = [['Jan 31, ' + N, 'W-2s and most 1099s arrive'], ['Feb 15, ' + N, 'Brokerage consolidated 1099s'], ['Apr 15, ' + N, 'File or extend; pay any balance; last day for ' + Y + ' IRA and HSA contributions'], ['Oct 15, ' + N, 'Extended filing deadline']];
+    if (untaxed) rows = [['Apr 15, ' + Y, 'Q1 estimated payment'], ['Jun 15, ' + Y, 'Q2 estimated payment'], ['Sep 15, ' + Y, 'Q3 estimated payment'], ['Jan 15, ' + N, 'Q4 estimated payment']].concat(rows);
+    $('dates').innerHTML = '<tbody>' + rows.map(function (d) { return '<tr><td style="white-space:nowrap">' + d[0] + '</td><td>' + d[1] + '</td></tr>'; }).join('') + '</tbody>' +
+      (untaxed ? '<tfoot><tr><td colspan="2" class="fine">Estimated payments only matter if withholding won\'t cover tax on business or investment income. Weekend dates move to the next business day.</td></tr></tfoot>' : '');
+    var stateRate = r.state.taxable > 0 ? r.state.tax / r.state.taxable : 0, save1k = Math.round(1000 * (r.marginal + stateRate));
+    var moves = [];
+    if (r.fedBalance > 100) moves.push(r.perPaycheck > 0 ? 'Add <b>' + money(r.perPaycheck) + '</b> per paycheck in W-4 Step 4(c) to land near $0.' : 'Raise withholding: the IRS estimator (irs.gov/w4app) tells you how much per paycheck.');
+    if (r.fedBalance < -1500) moves.push('You\'re on track for a big refund (' + money(-r.fedBalance) + '). Lowering withholding puts that money in your paychecks instead.');
+    moves.push('Each extra $1,000 into a pre-tax 401(k) saves about <b>' + money(save1k) + '</b> (' + Math.round(r.marginal * 100) + '% federal' + (stateRate ? ' + ' + pct(stateRate) + ' state' : '') + '). ' + Y + ' limit: ' + money(r.limits401k) + '.');
+    if (r.seTax > 0) moves.push('Self-employment tax of ' + money(r.seTax) + ' isn\'t withheld. Quarterly estimates of about <b>' + money(Math.max(0, r.fedBalance) / 4) + '</b> keep you clear of penalties, or add it to your W-4.');
+    if (r.bizNet < 0) moves.push('The business loss saves tax only while it\'s a real for-profit effort. Keep your plan, outreach and receipts.');
+    if (!P.accounts.hsa) moves.push('On a high-deductible health plan? An HSA is deductible going in and tax-free for medical costs.');
+    if (P.income.investments) moves.push('Harvest losses before Dec 31 to offset gains (watch the 30-day wash-sale rule).');
+    $('moves').innerHTML = moves.map(function (m) { return '<li>' + m + '</li>'; }).join('');
+  }
+
+  // ======================================================== boot
+  $('snap').innerHTML = S ? 'Folder snapshot from ' + esc(S.generated) + '. Your AI refreshes it after organizing; to refresh it yourself, double-click <b>Start-TaxAssistUS</b> for your computer (<b>_Windows</b>, <b>_Mac</b> or <b>_Linux</b>) again.'
+    : 'No snapshot at <code>my_tax_files/status.js</code>. Double-click <b>Start-TaxAssistUS</b> for your computer (<b>_Windows</b>, <b>_Mac</b> or <b>_Linux</b>) (needs Python 3), or run <code>python3 tools/taxassist.py start</code>.';
+  buildProfileForm();
+  var saved = store.get('estimate-inputs');
+  if (saved && saved.inputs && !saved.sample) { write(saved.inputs); isSample = false; }
+  else {
+    write(Object.assign({}, SAMPLE, profileBasics(), { year: SAMPLE.year }));
+    // First open: show the newest organized year that has data instead of sample numbers
+    var withData = (S && S.years || []).filter(function (y) { return Object.keys(y.ledgers).some(function (k) { return y.ledgers[k] > 0; }); })[0];
+    if (withData) loadYear(withData.year);
+  }
+  syncYear(); renderOrganized(); renderTray(); refreshInbox();
+  go(location.hash.slice(1) || (S && S.profile && !S.profileIsTemplate ? (S.inbox.length ? 'organize' : 'estimate') : 'profile'));
+  (async function () {
+    if (!canWrite) return;
+    try {
+      var h = await idb('readonly', function (s) { return s.get('root'); });
+      if (!h) return;
+      if ((await h.queryPermission({ mode: 'readwrite' })) === 'granted') { root = h; refreshInbox(); renderProfileSave(); return; }
+      $('conn').innerHTML = '<span class="dot" aria-hidden="true"></span><span>Folder remembered.</span> <button type="button" id="reconnect">Reconnect</button>';
+      $('reconnect').onclick = async function () { if ((await h.requestPermission({ mode: 'readwrite' })) === 'granted') { root = h; refreshInbox(); renderProfileSave(); } };
+    } catch (e) {}
+  })();
+  var rt; addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { if (current === 'estimate') renderEstimate(); }, 120); });
+})();
+</script>
+</body></html>

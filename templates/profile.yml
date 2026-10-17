@@ -1,0 +1,40 @@
+# Tax Assist US profile. Lives at my_tax_files/profile.yml (private, never in git).
+# Edit here or in step 1 of TaxAssistUS.html. No SSNs, account numbers or passwords.
+
+tax_year: 2026                # the year you're working on
+filing_status: single         # single | married_joint | married_separate | head_of_household | qualifying_surviving_spouse
+state:                        # two-letter code of the state you live in, e.g. AZ
+state_residency: full_year    # full_year | part_year | nonresident
+state_effective_rate:         # % for states the estimator doesn't model (last year's state tax / taxable income)
+dependents_under_17: 0
+other_dependents: 0
+age_65_or_older: 0            # people on the return
+paychecks_per_year: 26        # 52 weekly, 26 biweekly, 24 semimonthly, 12 monthly
+ai_assistant:                 # chatgpt | claude | gemini | grok | gemma (step 3 of TaxAssistUS.html)
+
+income:
+  w2_jobs: 1
+  spouse_has_income: no
+  self_employed: no
+  investments: no
+  rental: no
+  retirement_distributions: no
+  unemployment: no
+  crypto: no
+
+businesses: []                # one entry per business (see TaxAssistUS.html step 1): name, type, started, home_office
+                              # type: single_member_llc | sole_proprietor | contractor_1099 | gig | multi_member_llc | s_corp | c_corp
+
+accounts:
+  brokers: []                 # e.g. [Fidelity, Wealthfront]
+  retirement: []              # e.g. [401k, Roth IRA]
+  hsa: no
+  student_loans: no
+
+filing:
+  deduction: standard         # standard | itemized
+  extension: no
+
+history: []                   # one line per year, e.g. "2025: refund $500, filed on time"
+goals: []
+notes: []

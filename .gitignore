@@ -1,0 +1,46 @@
+# ---- Private tax files: never commit ----
+my_tax_files/*
+!my_tax_files/README.md
+
+# Belt and braces: tax documents and personal data anywhere outside my_tax_files/
+[0-9][0-9][0-9][0-9]_TaxDocs/
+profile.yml
+!templates/profile.yml
+status.js
+*.yml.tmp
+tax_projection_inputs_*.json
+
+# Documents, receipts, scans, spreadsheets, bank exports, archives
+*.[pP][dD][fF]
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[pP][nN][gG]
+*.[hH][eE][iI][cC]
+*.[wW][eE][bB][pP]
+*.[tT][iI][fF]
+*.[tT][iI][fF][fF]
+*.[cC][sS][vV]
+!templates/**/*.csv
+!templates/**/*.CSV
+*.[xX][lL][sS]
+*.[xX][lL][sS][xX]
+*.[oO][dD][sS]
+*.[oO][fF][xX]
+*.[qQ][fF][xX]
+*.[qQ][bB][oO]
+*.[zZ][iI][pP]
+
+# Local tooling and secrets
+.env
+.env.*
+node_modules/
+__pycache__/
+*.pyc
+.claude/settings.local.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
