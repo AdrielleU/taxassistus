@@ -20,6 +20,25 @@
 
   // Upper edge of each bracket except the last (37%), by filing status.
   var TAX_YEARS = {
+    2024: {
+      source: 'Rev. Proc. 2023-34; Rev. Proc. 2023-23 (HSA); IRS 2024 401(k) limit release; 2024 Pub 15 wage base; pre-OBBBA $2,000 child tax credit',
+      standardDeduction: { single: 14600, mfj: 29200, hoh: 21900 },
+      additional65: { single: 1950, mfj: 1550, hoh: 1950 },
+      brackets: {
+        single: [11600, 47150, 100525, 191950, 243725, 609350],
+        mfj: [23200, 94300, 201050, 383900, 487450, 731200],
+        hoh: [16550, 63100, 100500, 191950, 243700, 609350]
+      },
+      ltcg0: { single: 47025, mfj: 94050, hoh: 63000 },
+      ltcg15: { single: 518900, mfj: 583750, hoh: 551350 },
+      ssWageBase: 168600,
+      studentLoanPhaseout: { single: [80000, 95000], mfj: [165000, 195000], hoh: [80000, 95000] },
+      qbiThreshold: { single: 191950, mfj: 383900, hoh: 191950 },
+      childTaxCredit: 2000,
+      seniorBonus: 0, // the senior deduction starts in 2025
+      limits401k: 23000,
+      limitsHSA: { self: 4150, family: 8300 }
+    },
     2025: {
       source: 'Rev. Proc. 2024-40 as amended by P.L. 119-21 (OBBBA); SSA 2025 wage base',
       standardDeduction: { single: 15750, mfj: 31500, hoh: 23625 },

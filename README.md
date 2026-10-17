@@ -2,7 +2,7 @@
 
 **Use AI to get your United States of America (US) taxes right, and see your estimate before you pay.** For single filers, married couples, and anyone with an LLC, several LLCs, or 1099 side work.
 
-**Tax years:** used for 2024, 2025 and 2026. Upcoming: 2027 (released in January 2028).
+**Tax years:** 2024, 2025 and 2026, tested on real 2024 returns. Each year's figures live in one table, so the rest works the same any year. Upcoming: **2027** (filing by April 15, 2028, a Saturday, so the IRS will set the exact date), available May 1, 2027.
 
 TaxAssistUS keeps your tax documents in one private folder on your computer. An AI desktop app (Claude, ChatGPT or Gemini) sorts them, and a step-by-step page shows what you'll owe or get back, federal and state, before you file.
 
@@ -156,7 +156,7 @@ Everything personal lives in **`my_tax_files/`**, which git ignores. If you use 
 | `guides/2_taxes.md` | Expense rules, the estimate, filing, year-round planning | yes |
 | `guides/3_ai.md` | AI setups, prompts, how to check its work | yes |
 | `templates/` | Blank `profile.yml` and year ledgers | yes |
-| `tools/tax_engine.js` | Tax math and the 2025/2026 federal tables | yes |
+| `tools/tax_engine.js` | Tax math and the 2024, 2025 and 2026 federal tables | yes |
 | `tools/taxassist.py` | Helper: `start`, `serve`, `init`, `inbox`, `organize`, `check`, `summary`, `status` | yes |
 | `my_tax_files/` | Your profile, inbox, organized years, and `status.js` (the page's snapshot) | **never** |
 | `LICENSE` | MIT License | yes |
