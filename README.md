@@ -176,6 +176,24 @@ Before uploading anything to an online AI, black out SSNs and account numbers ([
 
 Everything personal lives in **`my_tax_files/`**, which git ignores. If you use git, run `git config core.hooksPath .githooks` once per clone: it blocks private files and SSN-shaped numbers from ever being committed, even with `git add -f`. Keep the folder on an encrypted disk with an encrypted backup. More in [guides/1_files.md](guides/1_files.md#privacy).
 
+## Keeping the state table current (GitHub Actions)
+
+`.github/workflows/state-rates-check.yml` runs every day on GitHub. It validates `state_tax_rates.csv` and finds every row whose **Next Check** date is today or past due. Then:
+
+- **With an `ANTHROPIC_API_KEY` secret**, Claude researches those states on their official sites (up to 8 states a run) and opens a **pull request** with the updated rows and a summary. It never pushes to `main`. The research step can't run commands or write to the repo, and the pull request is only opened if the CSV is the sole change and it passes validation. **Review each changed row against its Source URL before merging.**
+- **Without the key**, it keeps one issue, "State tax rates due for re-check", listing what's due, so a person (or your own AI) can do it.
+- When nothing is due, it closes that issue.
+
+**People approve every change.** The workflow only opens pull requests; it never approves or merges. You're notified of each new one, and `.github/CODEOWNERS` requests a review from the maintainer.
+
+One-time setup on GitHub:
+1. **Settings → Actions → General → Workflow permissions:** tick **Allow GitHub Actions to create and approve pull requests** (GitHub's single setting for letting the workflow open a PR).
+2. **Settings → Rules → Rulesets → New branch ruleset** for `main`: require a pull request with 1 approval and **review from Code Owners**. A bot isn't a code owner, so only a person can approve. Add yourself as a bypass actor if you still push to `main` directly.
+3. Optional: **Settings → Secrets and variables → Actions → New repository secret**, `ANTHROPIC_API_KEY` (from console.anthropic.com; usage is billed to that key).
+4. Optional variables on the same page: `RATES_STATES_PER_RUN` (default `8`) and `CLAUDE_MODEL` (default: the action's model).
+
+Run it by hand from **Actions → State tax rates re-check → Run workflow**, optionally "as of" a future date to preview. GitHub pauses scheduled workflows in public repos after 60 days without activity; re-enable it on the same page. Locally, `python3 tools/taxassist.py rates` runs the same check (`--as-of 2027-01-15` to preview).
+
 ## What's in the folder
 
 | Path | What it is | In git |
@@ -189,8 +207,9 @@ Everything personal lives in **`my_tax_files/`**, which git ignores. If you use 
 | `guides/3_ai.md` | AI setups, prompts, how to check its work | yes |
 | `state_tax_rates.csv` | State income tax rules for all 50 states + DC, 2024–2027: brackets, deductions, exemptions, each with source, date checked, verified, next check ([columns](guides/1_files.md#ledgers-csv)) | yes |
 | `templates/` | Blank `profile.yml` and year ledgers | yes |
+| `.github/workflows/state-rates-check.yml` | Daily re-check of `state_tax_rates.csv` ([above](#keeping-the-state-table-current-github-actions)) | yes |
 | `tools/tax_engine.js` | Tax math and the 2024, 2025 and 2026 federal tables | yes |
-| `tools/taxassist.py` | Helper: `start`, `serve`, `init`, `inbox`, `organize`, `check`, `summary`, `status` | yes |
+| `tools/taxassist.py` | Helper: `start`, `serve`, `init`, `inbox`, `organize`, `check`, `summary`, `status`, `rates` | yes |
 | `my_tax_files/` | Your profile, state rates, inbox, organized years, and `status.js` (the page's snapshot) | **never** |
 | `LICENSE` | MIT License | yes |
 

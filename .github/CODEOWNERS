@@ -1,0 +1,4 @@
+# A person must approve changes to the state rate table and to the automation that edits it.
+# With "Require review from Code Owners" on main, a bot approval never counts.
+/state_tax_rates.csv  @AdrielleU
+/.github/             @AdrielleU

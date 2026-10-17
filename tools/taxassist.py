@@ -6,6 +6,7 @@ Usage (from the project root):
   python3 tools/taxassist.py serve          # same, but served at http://127.0.0.1:8765 (this computer only); Ctrl+C stops
   python3 tools/taxassist.py serve --headless   # on a Linux server: no browser, prints the SSH tunnel command
   python3 tools/taxassist.py serve --bind 0.0.0.0 --allow-host taxes.example.com   # only behind a login proxy (docker-compose.yml)
+  python3 tools/taxassist.py rates           # validate state_tax_rates.csv; list rows due for a re-check (--as-of, --json)
   python3 tools/taxassist.py init 2026       # create my_tax_files/organized/2026_TaxDocs from templates
   python3 tools/taxassist.py inbox           # list files waiting in my_tax_files/inbox with a best guess for each
   python3 tools/taxassist.py organize FILE YEAR SUBFOLDER [--name NEW] [--as WHAT] [--ledger CSV] [--notes TEXT]
@@ -364,20 +365,28 @@ STATE_ITEMS = {"bracket", "standard_deduction", "personal_exemption", "dependent
 
 def check_state_rates(year):
     """Validate my_tax_files/state_tax_rates.csv rows for one year (hand-entered, so check them)."""
-    problems, warnings = [], []
     if not STATE_RATES.exists():
-        return problems, [f"missing {rel(STATE_RATES)} (copy the project's state_tax_rates.csv)"]
+        return [], [f"missing {rel(STATE_RATES)} (copy the project's state_tax_rates.csv)"]
     head, rows, _ = read_csv(STATE_RATES)
     if head != read_csv(STATE_RATES_TEMPLATE)[0]:
-        return [f"{rel(STATE_RATES)}: columns differ from the project's state_tax_rates.csv (copy its header row)"], warnings
+        return [f"{rel(STATE_RATES)}: columns differ from the project's state_tax_rates.csv (copy its header row)"], []
+    home = str((load_profile()[0] or {}).get("state") or "").strip().upper()
+    problems, warnings, verified = validate_rate_rows(rows, year, home)
+    if re.fullmatch(r"[A-Z]{2}", home) and home not in verified:
+        warnings.append(f"{STATE_RATES.name}: no verified {home} rows for {year}; look them up (AGENTS.md, Look it up)")
+    return problems, warnings
+
+
+def validate_rate_rows(rows, year=None, home="", today=None, name=STATE_RATES.name):
+    """Check state rate rows (all years when year is None). Returns problems, warnings and the states with verified rows."""
+    problems, warnings = [], []
     statuses = FILING_STATUSES | {"all"}
     verified = set()
-    home = str((load_profile()[0] or {}).get("state") or "").strip().upper()
-    today = datetime.now().strftime("%Y-%m-%d")
+    today = today or datetime.now().strftime("%Y-%m-%d")
     for n, r in enumerate(rows, start=2):
-        if r.get("Tax Year", "").strip() != str(year):
+        if year is not None and r.get("Tax Year", "").strip() != str(year):
             continue
-        where = f"{STATE_RATES.name} line {n}"
+        where = f"{name} line {n}"
         f = {k: (v or "").strip() for k, v in r.items()}
         state, item, mark = f.get("State", "").upper(), f.get("Item", ""), f.get("Verified", "").lower()
         if not re.fullmatch(r"[A-Z]{2}", state):
@@ -422,9 +431,45 @@ def check_state_rates(year):
             verified.add(state)
         elif state == home:
             warnings.append(f"{where}: {state} {item} not verified yet")
-    if re.fullmatch(r"[A-Z]{2}", home) and home not in verified:
-        warnings.append(f"{STATE_RATES.name}: no verified {home} rows for {year}; look them up (AGENTS.md, Look it up)")
-    return problems, warnings
+    return problems, warnings, verified
+
+
+def cmd_rates(args):
+    """Validate the project's state_tax_rates.csv and list rows whose Next Check is today or past due."""
+    today = args.as_of or datetime.now().strftime("%Y-%m-%d")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", today):
+        sys.exit("--as-of must look like 2027-01-15")
+    head, rows, _ = read_csv(STATE_RATES_TEMPLATE)
+    problems, _, _ = validate_rate_rows(rows, today=today, name=STATE_RATES_TEMPLATE.name)
+    if not re.fullmatch(r"\d{4}", str(args.year or "0000")):
+        sys.exit("--year must look like 2026")
+    due = defaultdict(list)
+    for n, r in enumerate(rows, start=2):
+        when = (r.get("Next Check") or "").strip()
+        if when and when <= today and (not args.year or r.get("Tax Year") == str(args.year)):
+            due[(r["State"], r["Tax Year"])].append(n)
+    groups = sorted(due, key=lambda k: (min(rows[i - 2]["Next Check"] for i in due[k]), k))
+    states = sorted({s for s, _ in groups}, key=lambda s: next(i for i, k in enumerate(groups) if k[0] == s))
+    picked = states[:args.limit] if args.limit else states
+    lines = [f"# State tax rates due for re-check (as of {today})", ""]
+    if problems:
+        lines += [f"**{len(problems)} problem(s) in {STATE_RATES_TEMPLATE.name}:**", ""] + [f"- {p}" for p in problems[:50]] + [""]
+    if not groups:
+        lines.append("Nothing is due.")
+    else:
+        lines += [f"{len(groups)} state-year(s) in {len(states)} state(s) are due" + (f"; this run takes the first {len(picked)}." if len(picked) < len(states) else "."), "",
+                  "| State | Tax year | Rows | Next Check | Lines |", "|---|---|---|---|---|"]
+        for st, yr in groups:
+            ns = due[(st, yr)]
+            lines.append(f"| {st} | {yr} | {len(ns)} | {min(rows[i - 2]['Next Check'] for i in ns)} | {ns[0]}–{ns[-1]} |")
+    report = "\n".join(lines) + "\n"
+    print(report)
+    if args.report:
+        Path(args.report).write_text(report, encoding="utf-8")
+    if args.json:
+        Path(args.json).write_text(json.dumps({"as_of": today, "problems": problems, "states": picked,
+            "due": [{"state": st, "year": yr, "lines": due[(st, yr)]} for st, yr in groups if st in picked]}, indent=2), encoding="utf-8")
+    sys.exit(1 if problems else 0)
 
 
 def cmd_check(args):
@@ -728,6 +773,13 @@ def main():
     sp.add_argument("--allow-host", action="append", default=[], metavar="NAME",
                     help="also answer to this host name (repeatable; or TAXASSIST_ALLOWED_HOSTS=a,b)")
     sp.set_defaults(fn=cmd_serve)
+    sp = sub.add_parser("rates", help="validate state_tax_rates.csv and list rows due for a re-check")
+    sp.add_argument("--as-of", help="treat this date (YYYY-MM-DD) as today")
+    sp.add_argument("--year", type=int, help="only this tax year")
+    sp.add_argument("--limit", type=int, default=0, help="at most this many states in --json (oldest due first)")
+    sp.add_argument("--report", help="also write the report (Markdown) here")
+    sp.add_argument("--json", help="also write the due list (JSON) here")
+    sp.set_defaults(fn=cmd_rates)
     sp = sub.add_parser("organize", help="move one inbox file into a year folder and log it")
     sp.add_argument("file", help="file name in my_tax_files/inbox/ (or a path)")
     sp.add_argument("year", type=int)
