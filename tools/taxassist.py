@@ -35,6 +35,8 @@ ORGANIZED = PRIVATE / "organized"
 LOG = ORGANIZED / "organize_log.csv"
 STATUS = PRIVATE / "status.js"
 PROFILE = PRIVATE / "profile.yml"
+STATE_RATES = PRIVATE / "state_tax_rates.csv"
+STATE_RATES_TEMPLATE = ROOT / "state_tax_rates.csv"
 FILING_STATUSES = {"single", "married_joint", "married_separate", "head_of_household", "qualifying_surviving_spouse"}
 LOG_HEAD = ["Date Organized", "Original Name", "Detected As", "Tax Year", "New Location", "Ledger Updated", "Organized By", "Notes"]
 EXPENSE_LEDGERS = {"software_expenses": "software_expenses", "hardware_expenses": "hardware_expenses"}
@@ -242,6 +244,9 @@ def cmd_init(args):
     if not PROFILE.exists():
         shutil.copyfile(ROOT / "templates" / "profile.yml", PROFILE)
         print(f"  created  {rel(PROFILE)} (fill it in, or use step 1 of TaxAssistUS.html)")
+    if not STATE_RATES.exists():
+        shutil.copyfile(STATE_RATES_TEMPLATE, STATE_RATES)
+        print(f"  created  {rel(STATE_RATES)} (state rates you look up: source, date checked, verified)")
     print(f"Ready: {rel(dest)} ({created} new files). Drop documents into {rel(INBOX)}/")
     write_status(quiet=True)
 
@@ -348,6 +353,77 @@ def run_checks(year):
                     problems.append(f"{folder.name}/{f.name!r} has leading/trailing spaces in its name")
                 elif f.is_file() and f.suffix.lower() in {".pdf", ".png", ".jpg", ".jpeg"} and f.resolve() not in referenced:
                     warnings.append(f"{folder.name}/{f.name} is not referenced by any ledger row")
+    p, w = check_state_rates(year)
+    return problems + p, warnings + w
+
+
+# Official state sites that don't end in .gov (Kansas Revisor of Statutes, Pennsylvania General Assembly)
+OFFICIAL_HOSTS = ("ksrevisor.org", "palegis.us")
+STATE_ITEMS = {"bracket", "standard_deduction", "personal_exemption", "dependent_exemption", "exemption_credit", "placeholder"}
+
+
+def check_state_rates(year):
+    """Validate my_tax_files/state_tax_rates.csv rows for one year (hand-entered, so check them)."""
+    problems, warnings = [], []
+    if not STATE_RATES.exists():
+        return problems, [f"missing {rel(STATE_RATES)} (copy the project's state_tax_rates.csv)"]
+    head, rows, _ = read_csv(STATE_RATES)
+    if head != read_csv(STATE_RATES_TEMPLATE)[0]:
+        return [f"{rel(STATE_RATES)}: columns differ from the project's state_tax_rates.csv (copy its header row)"], warnings
+    statuses = FILING_STATUSES | {"all"}
+    verified = set()
+    home = str((load_profile()[0] or {}).get("state") or "").strip().upper()
+    today = datetime.now().strftime("%Y-%m-%d")
+    for n, r in enumerate(rows, start=2):
+        if r.get("Tax Year", "").strip() != str(year):
+            continue
+        where = f"{STATE_RATES.name} line {n}"
+        f = {k: (v or "").strip() for k, v in r.items()}
+        state, item, mark = f.get("State", "").upper(), f.get("Item", ""), f.get("Verified", "").lower()
+        if not re.fullmatch(r"[A-Z]{2}", state):
+            problems.append(f"{where}: State should be a two-letter code, not {state!r}")
+        if f.get("Filing Status") not in statuses:
+            problems.append(f"{where}: Filing Status should be one of {', '.join(sorted(statuses))}")
+        if item not in STATE_ITEMS:
+            problems.append(f"{where}: Item should be one of {', '.join(sorted(STATE_ITEMS))}")
+        rate, amount = f.get("Rate %", ""), f.get("Amount", "")
+        if rate and not 0 <= num(rate) <= 20:
+            problems.append(f"{where}: Rate % should be a percent like 2.5 (got {rate!r})")
+        if item == "bracket":
+            if not f.get("From") or not rate and mark == "yes":
+                problems.append(f"{where}: a bracket needs From and Rate %")
+            if f.get("To") and num(f["To"]) <= num(f.get("From")):
+                problems.append(f"{where}: To must be above From (leave it blank for the top bracket)")
+        elif item == "standard_deduction":
+            if not amount and not rate and mark == "yes":
+                problems.append(f"{where}: a standard_deduction needs Amount, or Rate % with Min/Max")
+        elif item in STATE_ITEMS - {"placeholder"} and not amount and mark == "yes":
+            problems.append(f"{where}: {item} needs an Amount")
+        elif item == "placeholder" and mark == "yes":
+            problems.append(f"{where}: a placeholder has no figures, so it can't be Verified = yes")
+        for lo, hi in (("Min", "Max"), ("Phase-out Start", "Phase-out End")):
+            if f.get(lo) and f.get(hi) and num(f[hi]) < num(f[lo]):
+                problems.append(f"{where}: {hi} is below {lo}")
+        due = f.get("Next Check", "")
+        if due and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", due):
+            problems.append(f"{where}: Next Check should be YYYY-MM-DD")
+        elif due and state == home and due <= today:
+            warnings.append(f"{where}: {state} is due for a re-check (Next Check {due})")
+        if mark not in ("yes", "no"):
+            problems.append(f"{where}: Verified should be yes or no")
+        elif mark == "yes":
+            url = urllib.parse.urlsplit(f.get("Source URL", ""))
+            host = url.hostname or ""
+            if url.scheme not in ("http", "https") or not (host.endswith(".gov") or re.search(r"\.state\.[a-z]{2}\.us$", host)
+                                                             or any(host == h or host.endswith("." + h) for h in OFFICIAL_HOSTS)):
+                problems.append(f"{where}: verified rows need an official Source URL (….gov or ….state.XX.us)")
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", f.get("Last Checked", "")):
+                problems.append(f"{where}: verified rows need Last Checked as YYYY-MM-DD")
+            verified.add(state)
+        elif state == home:
+            warnings.append(f"{where}: {state} {item} not verified yet")
+    if re.fullmatch(r"[A-Z]{2}", home) and home not in verified:
+        warnings.append(f"{STATE_RATES.name}: no verified {home} rows for {year}; look them up (AGENTS.md, Look it up)")
     return problems, warnings
 
 
@@ -466,6 +542,8 @@ def ensure_setup():
         cmd_init(argparse.Namespace(year=datetime.now().year))
     elif not PROFILE.exists():
         shutil.copyfile(ROOT / "templates" / "profile.yml", PROFILE)
+    if not STATE_RATES.exists():
+        shutil.copyfile(STATE_RATES_TEMPLATE, STATE_RATES)
     write_status()
 
 

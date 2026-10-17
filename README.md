@@ -23,9 +23,34 @@ TaxAssistUS keeps your tax documents in one private folder on your computer. An 
 - Run in the background. The launcher opens the page and exits. The optional `serve` mode runs until you press Ctrl+C.
 - Cover every situation. The estimate covers wages, investments, a Schedule C business, common deductions and credits, and Arizona or a flat state rate. It doesn't cover married filing separately, AMT, refundable credits, multi-state or part-year returns, rentals, K-1s, or other states' detailed rules ([full list](guides/2_taxes.md#the-estimate-step-4-of-taxassistushtml)).
 
-**On the 2025 test year, the estimate matched a hand-built worksheet within $0.07.**
+**Tested on real 2024 and 2025 returns. For 2025, the federal estimate matched a hand-built worksheet within $0.07 (a variance under 0.01%), and the Arizona estimate matched to the cent.**
 
 ## Get started
+
+### Fastest: any AI chatbot, nothing to install
+
+1. Open ChatGPT, Claude, Gemini or Grok, and **turn on web search**.
+2. **Upload your documents** (W-2s, 1099s, 1098s, receipts). Black out Social Security and account numbers first.
+3. Copy this prompt, fill in the two blanks, and send it:
+
+   ```text
+   Help me with my US taxes. Tax year: ____   State: ____
+
+   If you can, look at this GitHub repo and follow its AGENTS.md ("Chat-only mode"):
+   https://github.com/AdrielleU/taxassistus
+
+   Using the documents I uploaded, do what the repo's Python scripts would do, yourself:
+   list and sort my documents, fill the ledgers, and check for problems. Then estimate my
+   federal and state tax the way tools/tax_engine.js does, using state_tax_rates.csv for
+   my state. Look up anything missing on official .gov sites and cite it. Give me one
+   HTML file I can open, plus the ledgers as CSV. Ask me if anything is unclear, and tell
+   me what to double-check.
+   ```
+4. **Open the HTML file it gives you** (download it, then double-click it). If something's wrong, just say so ("I'm married filing jointly", "box 1 is $52,300", "that receipt is personal") and ask for a new version. To check its math, open `TaxAssistUS.html` from the ZIP in your browser (no install needed) and type the same numbers into step 4.
+
+If the chatbot can't open the link, download the ZIP from GitHub and upload `AGENTS.md`, `state_tax_rates.csv` and `tools/tax_engine.js` along with your documents. Uploading puts your documents on that company's servers. For more privacy, use the setup below, where your files stay in a folder on your computer.
+
+### Full setup: a private folder on your computer
 
 1. **Get the code** and put it somewhere in your home folder: on GitHub, click **Code → Download ZIP** and unzip it, or
    ```bash
@@ -155,10 +180,11 @@ Everything personal lives in **`my_tax_files/`**, which git ignores. If you use 
 | `guides/1_files.md` | Folder layout, file names, ledger columns, forms to collect, privacy | yes |
 | `guides/2_taxes.md` | Expense rules, the estimate, filing, year-round planning | yes |
 | `guides/3_ai.md` | AI setups, prompts, how to check its work | yes |
+| `state_tax_rates.csv` | State income tax rules for all 50 states + DC, 2024–2027: brackets, deductions, exemptions, each with source, date checked, verified, next check ([columns](guides/1_files.md#ledgers-csv)) | yes |
 | `templates/` | Blank `profile.yml` and year ledgers | yes |
 | `tools/tax_engine.js` | Tax math and the 2024, 2025 and 2026 federal tables | yes |
 | `tools/taxassist.py` | Helper: `start`, `serve`, `init`, `inbox`, `organize`, `check`, `summary`, `status` | yes |
-| `my_tax_files/` | Your profile, inbox, organized years, and `status.js` (the page's snapshot) | **never** |
+| `my_tax_files/` | Your profile, state rates, inbox, organized years, and `status.js` (the page's snapshot) | **never** |
 | `LICENSE` | MIT License | yes |
 
 ## Troubleshooting

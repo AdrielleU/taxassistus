@@ -4,6 +4,8 @@
 
 Step 3 of `TaxAssistUS.html` has the setup steps and copy-paste prompts for each assistant; this is the summary.
 
+**No install at all:** paste the repo link and the prompt from the README ("Fastest: any AI chatbot") into any chatbot, then upload your documents. The AI follows `AGENTS.md` → "Chat-only mode" and hands back an HTML report and CSV ledgers. It's the quickest start, but your documents go to that company and nothing is saved for you. The setups below keep everything in a folder on your computer.
+
 | Assistant | Use this: desktop app with folder access | Website: only if you can't install apps | Linux / terminal |
 |---|---|---|---|
 | Claude | **Claude Desktop** (claude.ai/download) → Cowork → grant this folder | claude.ai Project: instructions + knowledge | Claude Code (`CLAUDE.md` → `AGENTS.md`) |

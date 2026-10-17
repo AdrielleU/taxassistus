@@ -2,7 +2,20 @@
 
 You're helping someone organize and estimate their **US** taxes in this folder (Tax Assist US). These rules apply to ChatGPT, Claude, Gemini, Grok, Gemma, Codex, or any assistant that can read these files. If you can't open files, browse, or run commands, say so and give the person the exact text, rows, or commands to apply instead. You organize and estimate; the person files.
 
+## Chat-only mode (no folder, no Python)
+
+When someone sends you this repo's link with their tax year and state, and uploads documents to a chat, there's no `my_tax_files/` folder and nothing to run. Do the same work in the conversation:
+
+1. **Read from the repo:** this file, `state_tax_rates.csv`, `tools/tax_engine.js`, the `templates/` ledgers (their headers are the columns) and `guides/2_taxes.md`. If you can't open links, ask the person to upload `AGENTS.md`, `state_tax_rates.csv` and `tools/tax_engine.js`.
+2. **Profile:** ask only what you can't read from the documents (filing status, dependents, age 65+, any business).
+3. **Do what `tools/taxassist.py` does, yourself:** for each upload, give the document type, issuer, tax year and key amounts, and the standard name and folder it would get (`organize`). Fill the ledgers in the template columns (`check`: every expense needs a receipt and a business purpose, dates in the tax year, totals add up). List what's missing (`inbox`, `status`).
+4. **Estimate** with the math in `tools/tax_engine.js` and that year's `TAX_YEARS`. For the state, use the `Verified = yes` rows of `state_tax_rates.csv` for that year, and look up anything else (see **Look it up**).
+5. **Deliver** one self-contained HTML report (see **Reports** below) as a file to download, or as code in one block if you can't attach files, plus each ledger as CSV. The person keeps these files; you can't save anything for them.
+6. All the **Rules** below still apply, especially: never repeat a full SSN or account number, trace every number to an upload or an official source, and refer complex cases to a pro.
+
 ## Start of every session
+
+In a folder (desktop app or terminal):
 
 1. Read `my_tax_files/profile.yml` (filing status, state, household, income types, business entity, goals, notes). If it's missing or mostly empty, ask them to fill in step 1 of `TaxAssistUS.html`, or ask the questions in `templates/profile.yml`.
 2. List `my_tax_files/inbox/` and `my_tax_files/organized/`. If the inbox has files, offer to organize them first.
@@ -24,10 +37,10 @@ You're helping someone organize and estimate their **US** taxes in this folder (
 
 Tax figures change every year, and sometimes mid-season (new laws, executive orders, conformity fights). Before you use any year-specific figure that isn't printed on the person's own documents (brackets, standard deduction, limits, phase-outs, credits, state rates, additions and subtractions, deadlines, interest rates), look it up **for that tax year**:
 
-1. **Reuse first.** Read `organized/<YEAR>_TaxDocs/<YEAR>_research_notes.md` if it exists.
+1. **Reuse first.** Read `organized/<YEAR>_TaxDocs/<YEAR>_research_notes.md` if it exists, and for state rates, the `Verified = yes` rows of `my_tax_files/state_tax_rates.csv`. Treat `no` rows as leads to confirm, not facts.
 2. **Search official sources** (table below), in this order: the agency's forms and instructions for that year → its official news releases → the statute → reputable secondary sources, used only to find the first three. **Never use tax-calculator or salary sites**: they often show federal numbers as state ones, or last year's figures.
 3. **Check for late changes.** Search the agency's newsroom for that tax year. Example: Arizona's 2025 forms followed Executive Order 2025-15 (a federal-matching standard deduction, plus subtractions for seniors, tips, overtime and car-loan interest) while the Legislature debated conformity, and ADOR revised its release on 2026-01-30. Confirm the current status before relying on it.
-4. **Record it** in `<YEAR>_research_notes.md` as `| Item | Value | Tax year | Source URL | Checked |`, and cite the source in your answer or report.
+4. **Record it** in `<YEAR>_research_notes.md` as `| Item | Value | Tax year | Source URL | Checked |`, and cite the source in your answer or report. State rates, brackets and standard deductions also go in `state_tax_rates.csv` (columns in `guides/1_files.md`): `Verified = yes` only if you read the figure on the official `.gov` page yourself; if you couldn't open it, write `no` and ask the person to check it. Set `Next Check` to when the figure could change or become final (for a year whose final forms aren't out yet, mid-January of the next year), and when one comes due, re-check it and update `Last Checked`, `Verified` and `Next Check` together.
 5. **Can't browse?** Say so. Use `TAX_YEARS` where it covers the item, and list what the person should verify, with links.
 
 | Need | Official source |
@@ -51,7 +64,7 @@ For the state in `profile.yml`, look up: the rate or brackets, standard deductio
 For each file in `my_tax_files/inbox/` (`python3 tools/taxassist.py inbox` shows a first guess):
 
 1. **Open and read it.** Don't trust the name. Identify the document, the issuer, the amounts, and the **tax year** (a W-2 received in January 2027 is a 2026 document; a receipt belongs to the year it was paid).
-2. Not a tax document, or a duplicate? Leave it and mention it. **Unsure?** Leave it and ask one specific question.
+2. A state tax rates table the person filled in (the `state_tax_rates.csv` columns)? Copy its rows into `my_tax_files/state_tax_rates.csv` exactly as given, `Verified` included, and leave the original. Not a tax document, or a duplicate? Leave it and mention it. **Unsure?** Leave it and ask one specific question.
 3. `python3 tools/taxassist.py init <YEAR>` if the year folder is missing.
 4. File it with a standard name:
    `python3 tools/taxassist.py organize "<inbox name>" <YEAR> <subfolder> --name <new_name> --as "<what it is>" --ledger <csv>`

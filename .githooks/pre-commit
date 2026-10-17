@@ -8,7 +8,7 @@ for f in $(git diff --cached --name-only --diff-filter=ACMR); do
     my_tax_files/*) echo "BLOCKED: $f is a private tax file"; fail=1 ;;
     *.pdf|*.jpg|*.jpeg|*.heic|*.png|*.webp|*.tif|*.tiff|*.xls|*.xlsx|*.ods|*.ofx|*.qfx|*.qbo|*.zip)
       echo "BLOCKED: $f looks like a tax document, receipt, spreadsheet or bank export"; fail=1 ;;
-    templates/*) ;;
+    templates/*|state_tax_rates.csv) ;;  # templates and the public state rate table
     profile.yml|*/profile.yml|status.js|*/status.js) echo "BLOCKED: $f is personal data (profile or folder snapshot)"; fail=1 ;;
     *_TaxDocs/*) echo "BLOCKED: $f is inside a tax year folder"; fail=1 ;;
     *.csv) echo "BLOCKED: $f looks like a ledger (only templates/ CSVs are allowed)"; fail=1 ;;

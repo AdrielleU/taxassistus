@@ -22,6 +22,7 @@ tax_projection_inputs_*.json
 *.[cC][sS][vV]
 !templates/**/*.csv
 !templates/**/*.CSV
+!/state_tax_rates.csv
 *.[xX][lL][sS]
 *.[xX][lL][sS][xX]
 *.[oO][dD][sS]
