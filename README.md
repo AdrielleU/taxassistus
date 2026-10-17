@@ -1,6 +1,8 @@
 # TaxAssistUS
 
-**Use AI to get your US taxes right, and see your estimate before you pay.** For single filers, married couples, and anyone with an LLC, several LLCs, or 1099 side work.
+**Use AI to get your United States of America (US) taxes right, and see your estimate before you pay.** For single filers, married couples, and anyone with an LLC, several LLCs, or 1099 side work.
+
+**Tax years:** used for 2024, 2025 and 2026. Upcoming: 2027 (released in January 2028).
 
 TaxAssistUS keeps your tax documents in one private folder on your computer. An AI desktop app (Claude, ChatGPT or Gemini) sorts them, and a step-by-step page shows what you'll owe or get back, federal and state, before you file.
 
