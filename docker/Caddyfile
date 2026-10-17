@@ -1,0 +1,23 @@
+# Used by docker-compose.yml. Settings come from .env; you shouldn't need to edit this.
+{
+	# Browsers send no server name (SNI) when TAXASSIST_DOMAIN is an IP address.
+	default_sni {$TAXASSIST_DOMAIN}
+}
+
+{$TAXASSIST_DOMAIN} {
+	# "internal" = Caddy's own certificate (LAN; browsers warn once). An email = Let's Encrypt.
+	tls {$TAXASSIST_TLS:internal}
+
+	basic_auth {
+		{$TAXASSIST_USER} {$TAXASSIST_PASSWORD_HASH}
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Frame-Options "DENY"
+		-Server
+	}
+
+	# Caddy keeps the browser's Host header, which taxassist.py checks against TAXASSIST_DOMAIN.
+	reverse_proxy app:8765
+}

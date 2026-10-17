@@ -17,7 +17,7 @@ TaxAssistUS keeps your tax documents in one private folder on your computer. An 
 
 **It doesn't:**
 - File returns, make payments, or log into any account
-- Send your data anywhere on its own. There's no server and no account. The page makes no network calls, and "upload" means copying into your own `inbox/` folder. Data only leaves your computer if *you* give files to an online AI.
+- Send your data anywhere on its own. There's no server and no account (unless you set up the optional [Docker server](#docker-server-shared-with-a-login)). The page makes no network calls, and "upload" means copying into your own `inbox/` folder. Data only leaves your computer if *you* give files to an online AI.
 - Run in the background. The launcher opens the page and exits. The optional `serve` mode runs until you press Ctrl+C.
 - Cover every situation. The estimate covers wages, investments, a Schedule C business, common deductions and credits, and Arizona or a flat state rate. It doesn't cover married filing separately, AMT, refundable credits, multi-state or part-year returns, rentals, K-1s, or other states' detailed rules ([full list](guides/2_taxes.md#the-estimate-step-4-of-taxassistushtml)).
 
@@ -37,6 +37,7 @@ TaxAssistUS keeps your tax documents in one private folder on your computer. An 
    | **Mac** | `Start-TaxAssistUS_Mac.command` | "Unidentified developer": right-click → **Open** → **Open**. It runs the `_Linux.sh` file, so keep both. |
    | **Linux desktop** | `./Start-TaxAssistUS_Linux.sh` in a terminal | Or right-click it in your file manager → **Run as a Program** |
    | **Linux server** (headless, over SSH) | `./Start-TaxAssistUS_LinuxServer.sh` on the server | Prints the SSH tunnel command to run on your own computer ([below](#on-a-linux-server)) |
+| **Docker server** (shared, with a login) | `docker compose up -d` on the server | Fill in `.env` first ([below](#docker-server-shared-with-a-login)) |
 
 3. **Your browser opens Tax Assist US.** Follow the five steps:
 
@@ -72,6 +73,24 @@ ssh -N -L 8765:127.0.0.1:8765 you@your-server       # 1. tunnel (leave it runnin
 ```
 
 Add documents by copying them to the server's inbox: `scp *.pdf you@your-server:~/TaxAssistUS/my_tax_files/inbox/` (the exact path is printed). Don't use the page's **Connect folder** in this mode: it would pick a folder on *your* computer, not the server. Press **Ctrl+C** on the server to stop it, and close the `ssh` command to disconnect.
+
+### Docker server (shared, with a login)
+
+`docker-compose.yml` runs the same `serve` mode behind [Caddy](https://caddyserver.com), which adds **HTTPS and a password**, so people can open it from their own browsers without SSH. It works with Docker or Podman (`podman-compose`).
+
+**Everyone who logs in sees and edits the same `my_tax_files/`**: full documents, SSNs included. Use it for one household or one person's own devices, not for unrelated people. Give each household its own copy of the project and its own port.
+
+1. Copy the settings file and make a password hash:
+   ```bash
+   cp .env.example .env
+   docker run --rm docker.io/library/caddy:2.8-alpine caddy hash-password --plaintext 'a long passphrase'
+   ```
+2. Edit `.env`: `TAXASSIST_DOMAIN` (the name or LAN IP people will type), `TAXASSIST_USER`, and `TAXASSIST_PASSWORD_HASH` (in single quotes). `TAXASSIST_TLS=internal` uses Caddy's own certificate, so each browser warns once. Put an email address there instead for a real Let's Encrypt certificate (that needs public DNS and ports 80/443 open).
+3. Start it with `docker compose up -d` (or `podman-compose up -d`), then open `https://<TAXASSIST_DOMAIN>/` (add `:<port>` if you changed `TAXASSIST_HTTPS_PORT`).
+
+How it's locked down: the app container has no published port and no internet access, so only Caddy can reach it. Its code is mounted read-only, with `my_tax_files/` as the only writable folder. It still refuses requests with any host name other than `TAXASSIST_DOMAIN`. Add documents with `scp` into `my_tax_files/inbox/`, and run your AI on the server in the project folder as usual. Stop it with `docker compose down`.
+
+**Rootless Podman** (the default on Fedora/RHEL): set `TAXASSIST_HTTP_PORT=8080`, `TAXASSIST_HTTPS_PORT=8443`, and `TAXASSIST_UID=0` / `TAXASSIST_GID=0` in `.env`. Container root is your own user there, so files stay yours. On a public server, prefer a VPN (WireGuard, Tailscale) over opening the port to the whole internet. A password is only one lock, and Caddy doesn't rate-limit login attempts.
 
 ### What you need
 
@@ -128,6 +147,7 @@ Everything personal lives in **`my_tax_files/`**, which git ignores. If you use 
 | Path | What it is | In git |
 |---|---|---|
 | `Start-TaxAssistUS_Windows.bat` / `_Mac.command` / `_Linux.sh` / `_LinuxServer.sh` | Launchers (desktop ones take `serve`) | yes |
+| `docker-compose.yml`, `docker/Caddyfile`, `.env.example` | Optional shared server: HTTPS + login in front of `serve` | yes (your `.env` never) |
 | `TaxAssistUS.html` | The app (the five steps) | yes |
 | `AGENTS.md` + `CLAUDE.md`, `GEMINI.md`, `GROK.md` | Rules for AI assistants, and pointers to them | yes |
 | `guides/1_files.md` | Folder layout, file names, ledger columns, forms to collect, privacy | yes |
@@ -150,6 +170,7 @@ Everything personal lives in **`my_tax_files/`**, which git ignores. If you use 
 | Uploads don't save into the folder | That needs Chrome or Edge (**Connect folder**). In other browsers, copy files into `my_tax_files/inbox/` |
 | `serve`: "Ports … are busy" | Another program is using them: `serve --port 9000` |
 | Linux server: the page won't load on your computer | Keep the `ssh -N -L …` command running, and use the same port it prints |
+| Docker: certificate error, connection refused, or 403 | Open it with exactly the `TAXASSIST_DOMAIN` name from `.env`; an IP or other name is refused |
 | The estimate differs from your tax software | Find out why before filing: compare line by line (step 4, **Copy as text**), and ask your AI to review the differences |
 
 ## Contributing

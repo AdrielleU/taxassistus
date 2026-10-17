@@ -1,0 +1,52 @@
+# Tax Assist US as a shared server: Caddy (HTTPS + login) in front of `taxassist.py serve`.
+#   cp .env.example .env    # then fill it in (see README, "Docker server")
+#   docker compose up -d           # Podman: podman-compose up -d
+# Everyone who logs in sees and edits the SAME my_tax_files/. Stop: docker compose down
+name: taxassistus
+
+services:
+  app:
+    image: docker.io/library/python:3.12-alpine
+    working_dir: /app
+    command: ["python3", "tools/taxassist.py", "serve", "--bind", "0.0.0.0", "--port", "8765"]
+    environment:
+      TAXASSIST_ALLOWED_HOSTS: ${TAXASSIST_DOMAIN:?set TAXASSIST_DOMAIN in .env}
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+    user: "${TAXASSIST_UID:-1000}:${TAXASSIST_GID:-1000}"
+    volumes:
+      - ./:/app:ro,z                          # code and templates, read-only
+      - ./my_tax_files:/app/my_tax_files:z    # the only writable folder
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [internal]                      # no published port, no internet: only Caddy reaches it
+    restart: unless-stopped
+
+  proxy:
+    image: docker.io/library/caddy:2.8-alpine
+    depends_on: [app]
+    ports:
+      - "${TAXASSIST_HTTP_PORT:-80}:80"
+      - "${TAXASSIST_HTTPS_PORT:-443}:443"
+    environment:
+      TAXASSIST_DOMAIN: ${TAXASSIST_DOMAIN:?set TAXASSIST_DOMAIN in .env}
+      TAXASSIST_TLS: ${TAXASSIST_TLS:-internal}
+      TAXASSIST_USER: ${TAXASSIST_USER:?set TAXASSIST_USER in .env}
+      TAXASSIST_PASSWORD_HASH: ${TAXASSIST_PASSWORD_HASH:?set TAXASSIST_PASSWORD_HASH in .env}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro,z
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [internal, web]
+    restart: unless-stopped
+
+networks:
+  internal:
+    internal: true
+  web:
+
+volumes:
+  caddy_data:
+  caddy_config:

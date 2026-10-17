@@ -33,6 +33,7 @@ tax_projection_inputs_*.json
 # Local tooling and secrets
 .env
 .env.*
+!.env.example
 node_modules/
 __pycache__/
 *.pyc

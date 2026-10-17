@@ -5,6 +5,7 @@ Usage (from the project root):
   python3 tools/taxassist.py start          # set up on first run, refresh the snapshot, open TaxAssistUS.html
   python3 tools/taxassist.py serve          # same, but served at http://127.0.0.1:8765 (this computer only); Ctrl+C stops
   python3 tools/taxassist.py serve --headless   # on a Linux server: no browser, prints the SSH tunnel command
+  python3 tools/taxassist.py serve --bind 0.0.0.0 --allow-host taxes.example.com   # only behind a login proxy (docker-compose.yml)
   python3 tools/taxassist.py init 2026       # create my_tax_files/organized/2026_TaxDocs from templates
   python3 tools/taxassist.py inbox           # list files waiting in my_tax_files/inbox with a best guess for each
   python3 tools/taxassist.py organize FILE YEAR SUBFOLDER [--name NEW] [--as WHAT] [--ledger CSV] [--notes TEXT]
@@ -16,6 +17,7 @@ Usage (from the project root):
 import argparse
 import csv
 import json
+import os
 import re
 import shutil
 import sys
@@ -483,13 +485,18 @@ def cmd_serve(args):
     could still try to load http://127.0.0.1/... (e.g. <script src=".../status.js">), every
     response also refuses cross-site use, and requests from other sites or with a foreign
     Host header (DNS rebinding) are rejected. On a headless server, reach it through an SSH
-    tunnel; any local port works, because only the host name is checked."""
+    tunnel; any local port works, because only the host name is checked.
+
+    --bind and --allow-host exist for docker-compose.yml, where Caddy adds HTTPS and a login in
+    front and passes the browser's host name through. Never expose them without that proxy."""
     import getpass
     import http.server
     import socket
 
     ensure_setup()
     local_names = {"127.0.0.1", "localhost", "[::1]"}
+    extra = args.allow_host + os.environ.get("TAXASSIST_ALLOWED_HOSTS", "").split(",")
+    local_names |= {h.strip().lower() for h in extra if h.strip()}
 
     class Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *a, **kw):
@@ -549,7 +556,7 @@ def cmd_serve(args):
         def do_POST(self):
             """The only write: replace my_tax_files/profile.yml with valid profile YAML (step 1's Save)."""
             origin = self.headers.get("Origin")
-            if not self.allowed() or (origin and urllib.parse.urlsplit(origin).hostname not in ("127.0.0.1", "localhost", "::1")):
+            if not self.allowed() or (origin and (urllib.parse.urlsplit(origin).hostname or "") not in local_names | {"::1"}):
                 self.send_error(403)
                 return
             if urllib.parse.urlsplit(self.path).path != "/api/profile":
@@ -591,14 +598,17 @@ def cmd_serve(args):
     server = None
     for port in range(args.port, args.port + 10):
         try:
-            server = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
+            server = http.server.ThreadingHTTPServer((args.bind, port), Handler)
             break
         except OSError:
             continue
     if server is None:
         sys.exit(f"Ports {args.port}-{args.port + 9} are busy. Try: python3 tools/taxassist.py serve --port 9000")
     url = f"http://127.0.0.1:{port}/TaxAssistUS.html"
-    if args.headless:
+    if args.bind not in ("127.0.0.1", "localhost", "::1"):
+        print(f"\nTax Assist US is listening on {args.bind}:{port} for: {', '.join(sorted(local_names))}")
+        print("There is no login here: keep it behind the HTTPS + password proxy in docker-compose.yml.")
+    elif args.headless:
         who = f"{getpass.getuser()}@{socket.getfqdn()}"
         print(f"\nTax Assist US is serving on this server's 127.0.0.1:{port} only (not on the network).")
         print("On your own computer, open a terminal and run:\n")
@@ -636,6 +646,9 @@ def main():
     sp.add_argument("--port", type=int, default=8765, help="first port to try (default 8765)")
     sp.add_argument("--no-browser", action="store_true", help="don't open a browser")
     sp.add_argument("--headless", action="store_true", help="Linux server: no browser; print SSH tunnel instructions")
+    sp.add_argument("--bind", default="127.0.0.1", help="address to listen on (default 127.0.0.1; others only behind a login proxy)")
+    sp.add_argument("--allow-host", action="append", default=[], metavar="NAME",
+                    help="also answer to this host name (repeatable; or TAXASSIST_ALLOWED_HOSTS=a,b)")
     sp.set_defaults(fn=cmd_serve)
     sp = sub.add_parser("organize", help="move one inbox file into a year folder and log it")
     sp.add_argument("file", help="file name in my_tax_files/inbox/ (or a path)")
