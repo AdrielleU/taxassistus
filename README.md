@@ -117,12 +117,13 @@ Add documents by copying them to the server's inbox: `scp *.pdf you@your-server:
 1. Copy the settings file and make a password hash:
    ```bash
    cp .env.example .env
-   docker run --rm docker.io/library/caddy:2.8-alpine caddy hash-password --plaintext 'a long passphrase'
+   docker run --rm docker.io/library/caddy:2.11.7-alpine caddy hash-password --plaintext 'a long passphrase'
    ```
 2. Edit `.env`: `TAXASSIST_DOMAIN` (the name or LAN IP people will type), `TAXASSIST_USER`, and `TAXASSIST_PASSWORD_HASH` (in single quotes). `TAXASSIST_TLS=internal` uses Caddy's own certificate, so each browser warns once. Put an email address there instead for a real Let's Encrypt certificate (that needs public DNS and ports 80/443 open).
-3. Start it with `docker compose up -d` (or `podman-compose up -d`), then open `https://<TAXASSIST_DOMAIN>/` (add `:<port>` if you changed `TAXASSIST_HTTPS_PORT`).
+3. Once per host, create the shared network and Caddy's folders: `podman network create network_container` (Docker: `docker network create network_container`) and `mkdir -p data/caddy/data data/caddy/config`.
+4. Start it with `podman-compose up -d` (or `docker compose up -d`), then open `https://<TAXASSIST_DOMAIN>/` (add `:<port>` if you changed `TAXASSIST_HTTPS_PORT`).
 
-How it's locked down: the app container has no published port and no internet access, so only Caddy can reach it. Its code is mounted read-only, with `my_tax_files/` as the only writable folder. It still refuses requests with any host name other than `TAXASSIST_DOMAIN`. Add documents with `scp` into `my_tax_files/inbox/`, and run your AI on the server in the project folder as usual. Stop it with `docker compose down`.
+It runs two containers, `taxassist` and `taxassist-caddy`. Both join the shared `network_container` used by the other stacks on the host; Caddy's certificates are in `data/caddy/` (git ignores it). How it's locked down: `taxassist` has no published port, so people reach it only through Caddy's login, and `data/` is hidden from it. Other containers on `network_container` can reach it directly, so keep only trusted stacks on that network. Its code is mounted read-only, with `my_tax_files/` as the only writable folder. It still refuses requests with any host name other than `TAXASSIST_DOMAIN`. Add documents with `scp` into `my_tax_files/inbox/`, and run your AI on the server in the project folder as usual. Stop it with `podman-compose down` (or `docker compose down`).
 
 **Rootless Podman** (the default on Fedora/RHEL): set `TAXASSIST_HTTP_PORT=8080`, `TAXASSIST_HTTPS_PORT=8443`, and `TAXASSIST_UID=0` / `TAXASSIST_GID=0` in `.env`. Container root is your own user there, so files stay yours. On a public server, prefer a VPN (WireGuard, Tailscale) over opening the port to the whole internet. A password is only one lock, and Caddy doesn't rate-limit login attempts.
 
@@ -209,7 +210,7 @@ Run it by hand from **Actions → State tax rates re-check → Run workflow**, o
 | `templates/` | Blank `profile.yml` and year ledgers | yes |
 | `.github/workflows/state-rates-check.yml` | Daily re-check of `state_tax_rates.csv` ([above](#keeping-the-state-table-current-github-actions)) | yes |
 | `tools/tax_engine.js` | Tax math and the 2024, 2025 and 2026 federal tables | yes |
-| `tools/taxassist.py` | Helper: `start`, `serve`, `init`, `inbox`, `organize`, `check`, `summary`, `status`, `rates` | yes |
+| `tools/taxassist.py` | Helper: `start`, `serve`, `init`, `inbox`, `organize`, `import`, `check`, `summary`, `status`, `rates` | yes |
 | `my_tax_files/` | Your profile, state rates, inbox, organized years, and `status.js` (the page's snapshot) | **never** |
 | `LICENSE` | MIT License | yes |
 

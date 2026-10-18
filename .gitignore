@@ -32,6 +32,8 @@ tax_projection_inputs_*.json
 *.[zZ][iI][pP]
 
 # Local tooling and secrets
+# docker-compose.yml: Caddy's certificates and keys
+/data/
 .env
 .env.*
 !.env.example

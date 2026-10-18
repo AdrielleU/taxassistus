@@ -5,7 +5,7 @@
 ```
 my_tax_files/                      ← private: ignored by git + blocked by the pre-commit hook
 ├── profile.yml                    ← who you are, tax-wise (step 1 of TaxAssistUS.html)
-├── state_tax_rates.csv            ← state rates by year, with source, date checked, verified
+├── state_tax_rates.csv            ← optional: only rows you add or correct (the full table is the project's)
 ├── inbox/                         ← drop anything here, any name. Only you add files.
 ├── organized/
 │   ├── organize_log.csv           ← one row per file moved out of the inbox
@@ -39,7 +39,7 @@ Keep the template headers exactly. One row per document or transaction, dates `Y
 
 **Expense categories → Schedule C line:** Advertising & Marketing 8 · Car & Truck 9 · Contract Labor 11 · Equipment (de minimis safe harbor) 22/27a · Equipment (depreciated / Section 179) 13 · Insurance 15 · Legal & Professional / Startup-Organizational 17 · Office Expense 18 · Rent 20b · Supplies 22 · Taxes & Licenses 23 · Travel 24a · Meals (50%) 24b · Utilities / Telephone 25 · Software & Subscriptions, Cloud Infrastructure, Domains & Hosting 27a · Home Office 30.
 
-**State tax rates** (`my_tax_files/state_tax_rates.csv`, created from `state_tax_rates.csv` in the project folder). The project copy covers all 50 states and Washington, DC for tax years 2024–2027, researched on 2026-10-17 from each state's official site (about 2,150 rows). 2024 and 2025 are complete. 2026 and 2027 are partly published: what's officially set is there, rows marked `no` (estimates, drafts, withholding tables) still need checking, and anything not published yet has a `placeholder` row with its Next Check date. Rates are state-level only (local income taxes are in Notes), and US territories aren't included. To pick up a newer project copy, copy its rows over yours, keeping any rows you added. One rule per row (the layout tax-modeling projects use), so deductions that are a percentage, have a floor or cap, or phase out still fit:
+**State tax rates** (`state_tax_rates.csv` in the project folder, kept current by the daily re-check). `check` reads it directly; `my_tax_files/state_tax_rates.csv` is optional and holds only rows you add or correct (same header). A row there replaces the project row with the same State, Tax Year, Filing Status, Item and From, so updates to the project table reach you without copying. The project table covers all 50 states and Washington, DC for tax years 2024–2027, researched on 2026-10-17 from each state's official site (about 2,150 rows). 2024 and 2025 are complete. 2026 and 2027 are partly published: what's officially set is there, rows marked `no` (estimates, drafts, withholding tables) still need checking, and anything not published yet has a `placeholder` row with its Next Check date. Rates are state-level only (local income taxes are in Notes), and US territories aren't included. One rule per row (the layout tax-modeling projects use), so deductions that are a percentage, have a floor or cap, or phase out still fit:
 
 | Column | What goes in it |
 |---|---|
@@ -54,6 +54,14 @@ Keep the template headers exactly. One row per document or transaction, dates `Y
 | Notes, Source URL, Last Checked, Verified, Next Check | Explanation; the official page read; `YYYY-MM-DD`; `yes`/`no`; when to look again |
 
 A flat-rate state needs one `bracket` row per filing status (or one `all` row), and a state with no income tax needs one `bracket` row at `0`. `check` validates every row for the year and reminds you when your state's Next Check date has passed. Mark `yes` only after reading the number on the state's own official site (`.gov`, or an older `.state.XX.us` address) or form; `check` enforces that. State sites are often hard for an AI to read, so you can fill this in yourself (in any spreadsheet app, saved as CSV) and drop it in the inbox, or paste the rows to your AI.
+
+**Importing from Favabooks (Beancount).** In Fava's Query page run this (with your tax year in place of 2025), download the result as CSV and drop it in the inbox:
+
+```
+SELECT date, payee, narration, entry_meta('invoice') AS invoice, entry_meta('service_period') AS service_period, entry_meta('sales_tax') AS sales_tax, number AS amount, entry_meta('card') AS card, entry_meta('billing') AS billing, account, entry_meta('business_use') AS business_use, entry_meta('business') AS business, entry_meta('purpose') AS purpose, entry_meta('document') AS document, entry_meta('note') AS note, id FROM year = 2025 WHERE account ~ '^Expenses:' ORDER BY date
+```
+
+Then `python3 tools/taxassist.py import <file> 2025 --dry-run` to preview and the same without `--dry-run` to apply. `Expenses:Equipment` rows go to `hardware_expenses_`, every other expense to `software_expenses_`, and accounts map back to the categories above. A CSV already in the expense ledger columns works too. Duplicates are skipped, so re-importing the same or an overlapping export is safe. A row is skipped if a ledger row has the same vendor, Invoice # and amount, or the same date, vendor and amount. Matching is one for one, so two real identical charges both stay. A row with the same date and amount as another vendor's row is held as a possible duplicate (often the same charge under two names); add it by hand, or rerun with `--keep-possible`. Rows dated outside the year are skipped. The export is filed in the year folder and logged.
 
 **Organize log columns:** Date Organized, Original Name, Detected As, Tax Year, New Location, Ledger Updated, Organized By, Notes. `taxassist.py organize` writes it for you and never overwrites.
 

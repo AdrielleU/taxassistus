@@ -19,5 +19,5 @@
 	}
 
 	# Caddy keeps the browser's Host header, which taxassist.py checks against TAXASSIST_DOMAIN.
-	reverse_proxy app:8765
+	reverse_proxy taxassist:8765
 }

@@ -11,6 +11,7 @@ Usage (from the project root):
   python3 tools/taxassist.py inbox           # list files waiting in my_tax_files/inbox with a best guess for each
   python3 tools/taxassist.py organize FILE YEAR SUBFOLDER [--name NEW] [--as WHAT] [--ledger CSV] [--notes TEXT]
                                              # move one inbox file into a year folder and log it
+  python3 tools/taxassist.py import FILE 2025 [--dry-run]   # add expense rows from a favabooks export, skipping duplicates
   python3 tools/taxassist.py check 2025      # validate ledgers against receipts
   python3 tools/taxassist.py summary 2025    # print totals as Markdown (safe to share: no card numbers)
   python3 tools/taxassist.py status          # refresh my_tax_files/status.js for TaxAssistUS.html (includes profile.yml)
@@ -245,9 +246,6 @@ def cmd_init(args):
     if not PROFILE.exists():
         shutil.copyfile(ROOT / "templates" / "profile.yml", PROFILE)
         print(f"  created  {rel(PROFILE)} (fill it in, or use step 1 of TaxAssistUS.html)")
-    if not STATE_RATES.exists():
-        shutil.copyfile(STATE_RATES_TEMPLATE, STATE_RATES)
-        print(f"  created  {rel(STATE_RATES)} (state rates you look up: source, date checked, verified)")
     print(f"Ready: {rel(dest)} ({created} new files). Drop documents into {rel(INBOX)}/")
     write_status(quiet=True)
 
@@ -292,6 +290,155 @@ def cmd_organize(args):
                     rel(dest).replace("my_tax_files/", ""), args.ledger or "", args.by, args.notes or ""])
     print(f"Moved {src.name} → {rel(dest)} and logged it in {rel(LOG)}")
     write_status(quiet=True)
+
+
+# Favabooks (Beancount) expense accounts -> ledger Category. Mirrors `categories` in the
+# favabooks importer config; accounts not listed keep their name so `check` shows them.
+ACCOUNT_CATEGORIES = {
+    "Expenses:Software": "Software & Subscriptions",
+    "Expenses:Office": "Office Expense",
+    "Expenses:Cloud": "Cloud Infrastructure",
+    "Expenses:Utilities:Telephone": "Utilities / Telephone",
+    "Expenses:Hosting": "Domains & Hosting",
+    "Expenses:Legal:Startup": "Legal & Professional / Startup-Organizational",
+    "Expenses:Equipment": "Equipment (de minimis safe harbor)",
+    "Expenses:Advertising": "Advertising & Marketing",
+}
+# Run in Fava's Query page (or bean-query -f csv), then download as CSV. Metadata keys are the
+# favabooks ExpenseCSV ones; business_use and business are optional.
+FAVABOOKS_QUERY = ("SELECT date, payee, narration, entry_meta('invoice') AS invoice, entry_meta('service_period') AS service_period, "
+                   "entry_meta('sales_tax') AS sales_tax, number AS amount, entry_meta('card') AS card, entry_meta('billing') AS billing, "
+                   "account, entry_meta('business_use') AS business_use, entry_meta('business') AS business, "
+                   "entry_meta('purpose') AS purpose, entry_meta('document') AS document, entry_meta('note') AS note, id "
+                   "FROM year = YEAR WHERE account ~ '^Expenses:' ORDER BY date")
+
+
+def norm_vendor(s):
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower())
+
+
+def cents(s):
+    return round(num(s) * 100)
+
+
+def dup_keys(r):
+    """Keys that identify the same purchase: vendor + invoice + amount, and date + vendor + amount."""
+    v, amt = norm_vendor(r.get("Vendor")), cents(r.get("Amount"))
+    inv = (r.get("Invoice #") or "").strip()
+    return [("inv", v, inv, amt)] * bool(inv) + [("day", r.get("Date", "").strip(), v, amt)]
+
+
+def favabooks_row(r, business):
+    """One favabooks query row (an Expenses posting) -> (ledger stem, expense ledger row)."""
+    account = (r.get("account") or "").strip()
+    amount, tax = num(r.get("amount")), num(r.get("sales_tax"))
+    use = num(r.get("business_use")) if (r.get("business_use") or "").strip() else 100
+    receipt = re.sub(r"^\d{4}-\d{2}-\d{2}\.", "", (r.get("document") or "").strip())  # Fava files documents as DATE.name
+    row = {"Date": r.get("date", "").strip(), "Vendor": (r.get("payee") or "").strip(), "Product/Plan": (r.get("narration") or "").strip(),
+           "Invoice #": (r.get("invoice") or "").strip(), "Service Period": (r.get("service_period") or "").strip(),
+           "Subtotal (pre-tax)": f"{amount - tax:.2f}", "Sales Tax": f"{tax:.2f}", "Amount": f"{amount:.2f}",
+           "Card (last 4)": (r.get("card") or "").strip()[-4:], "Billing": (r.get("billing") or "").strip(),
+           "Category": ACCOUNT_CATEGORIES.get(account, account), "Business Use %": f"{use:g}",
+           "Deductible Amount": f"{amount * use / 100:.2f}", "Business / Venture": (r.get("business") or "").strip() or business,
+           "Business Purpose": (r.get("purpose") or "").strip(), "Receipt File": receipt, "Notes": (r.get("note") or "").strip()}
+    return ("hardware_expenses" if account.startswith("Expenses:Equipment") else "software_expenses"), row
+
+
+def cmd_import(args):
+    """Append expense rows from a favabooks export (or a CSV in the ledger columns), skipping ones already in the ledgers."""
+    src = Path(args.file)
+    if not src.is_absolute():
+        src = INBOX / src if (INBOX / src).exists() else Path.cwd() / src
+    if not src.is_file():
+        sys.exit(f"Not found: {args.file}")
+    d = year_dir(args.year)
+    if not d.is_dir():
+        sys.exit(f"{rel(d)} doesn't exist. Run: python3 tools/taxassist.py init {args.year}")
+    head, rows, _ = read_csv(src)
+    expense_head = read_csv(TEMPLATE / "software_expenses_YEAR.csv")[0]
+    paths = {stem: d / f"{stem}_{args.year}.csv" for stem in EXPENSE_LEDGERS}
+    existing = {stem: read_csv(p)[1] if p.exists() else [] for stem, p in paths.items()}
+    business = args.business
+    if not business:  # the venture name these ledgers already use, else the profile's only business
+        names = [r.get("Business / Venture", "").strip() for rs in existing.values() for r in rs if r.get("Business / Venture", "").strip()]
+        biz = (load_profile()[0] or {}).get("businesses") or []
+        business = max(set(names), key=names.count) if names else (biz[0].get("name", "") if len(biz) == 1 and isinstance(biz[0], dict) else "")
+    if {"date", "payee", "account", "amount"} <= set(head):
+        incoming = [favabooks_row(r, business) for r in rows if (r.get("account") or "").startswith("Expenses:")]
+    elif head == expense_head:
+        incoming = [("hardware_expenses" if "equipment" in r.get("Category", "").lower() else "software_expenses", r) for r in rows]
+    else:
+        sys.exit(f"{src.name}: unknown columns. Export from favabooks with this query (YEAR = the tax year), "
+                 f"or use the expense ledger columns:\n\n{FAVABOOKS_QUERY}")
+
+    # Match against the ledgers only (favabooks keeps its own transactions apart), and count keys so two
+    # genuine identical charges stay two rows: each existing row cancels one incoming row.
+    seen = defaultdict(int)
+    by_day = defaultdict(list)
+    for rs in existing.values():
+        for r in rs:
+            for k in dup_keys(r):
+                seen[k] += 1
+            by_day[(r.get("Date", "").strip(), cents(r.get("Amount")))].append(r.get("Vendor", ""))
+    added, dupes, maybe, other_year = defaultdict(list), [], [], []
+    for stem, r in incoming:
+        if not r.get("Date", "").startswith(str(args.year)):
+            other_year.append(r)
+            continue
+        keys = dup_keys(r)
+        hit = next((k for k in keys if seen[k] > 0), None)
+        if hit:
+            seen[hit] -= 1
+            for k in keys:  # an exact twin matches on both keys; use up both so it can't cancel another row
+                if k != hit and seen[k] > 0:
+                    seen[k] -= 1
+            dupes.append(r)
+            continue
+        # Same day and amount under another vendor name is often the same charge (e.g. "Amazon" vs the seller).
+        twins = [v for v in by_day.get((r["Date"].strip(), cents(r.get("Amount"))), []) if norm_vendor(v) != norm_vendor(r.get("Vendor"))]
+        if twins and not args.keep_possible:
+            maybe.append((r, twins[0]))
+            continue
+        added[stem].append(r)
+
+    for stem, new in added.items():
+        print(f"{'would add' if args.dry_run else 'add'}  {len(new)} row(s) to {paths[stem].name}")
+        for r in new:
+            print(f"    {r['Date']}  {r['Vendor'][:40]:40}  {money(num(r['Amount'])):>11}")
+    print(f"skip  {len(dupes)} already in the ledgers")
+    for r, other in maybe:
+        print(f"skip  {r['Date']}  {r['Vendor']}  {money(num(r['Amount']))}: possible duplicate of {other!r} (same date and amount); "
+              "add it by hand, or rerun with --keep-possible")
+    if other_year:
+        print(f"skip  {len(other_year)} dated outside {args.year}")
+    if args.dry_run:
+        print("Dry run: nothing changed.")
+        return
+    for stem, new in added.items():
+        path = paths[stem]
+        head_now, old, total = read_csv(path) if path.exists() else (expense_head, [], None)
+        if head_now != expense_head:
+            sys.exit(f"{path.name}: columns differ from the template; fix them, then import again. Nothing was written.")
+        rows_out = sorted(old + new, key=lambda r: r.get("Date", ""))
+        with open(path, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.DictWriter(f, fieldnames=expense_head, extrasaction="ignore")
+            w.writeheader()
+            w.writerows(rows_out)
+            if total:  # keep a TOTAL row, recomputed
+                total = (total + [""] * len(expense_head))[:len(expense_head)]
+                for col in ("Amount", "Deductible Amount"):
+                    if total[expense_head.index(col)].strip():
+                        total[expense_head.index(col)] = f"{sum(num(r.get(col)) for r in rows_out):.2f}"
+                total[-1] = re.sub(r"^\d+(?= receipts?$)", str(len(rows_out)), total[-1])
+                csv.writer(f).writerow(total)
+    summary = f"{sum(map(len, added.values()))} added, {len(dupes)} duplicate(s) skipped, {len(maybe)} possible duplicate(s) held"
+    if src.parent.resolve() == INBOX.resolve():  # file the export like any other source document
+        cmd_organize(argparse.Namespace(file=str(src), year=args.year, subfolder=".", what="Favabooks export",
+                                        name=f"favabooks_export_{args.year}_{datetime.now():%Y%m%d_%H%M}{src.suffix.lower()}",
+                                        ledger=", ".join(paths[s].name for s in added), notes=summary, by=args.by))
+    else:
+        write_status(quiet=True)
+    print(f"Done: {summary}. Next: python3 tools/taxassist.py check {args.year}")
 
 
 def run_checks(year):
@@ -364,17 +511,25 @@ STATE_ITEMS = {"bracket", "standard_deduction", "personal_exemption", "dependent
 
 
 def check_state_rates(year):
-    """Validate my_tax_files/state_tax_rates.csv rows for one year (hand-entered, so check them)."""
-    if not STATE_RATES.exists():
-        return [], [f"missing {rel(STATE_RATES)} (copy the project's state_tax_rates.csv)"]
-    head, rows, _ = read_csv(STATE_RATES)
-    if head != read_csv(STATE_RATES_TEMPLATE)[0]:
-        return [f"{rel(STATE_RATES)}: columns differ from the project's state_tax_rates.csv (copy its header row)"], []
+    """Validate one year of state rate rows: the project table plus any rows in my_tax_files/state_tax_rates.csv."""
+    head, rows, _ = read_csv(STATE_RATES_TEMPLATE)
+    mine = []
+    if STATE_RATES.exists():
+        mine_head, mine, _ = read_csv(STATE_RATES)
+        if mine_head != head:
+            return [f"{rel(STATE_RATES)}: columns differ from the project's state_tax_rates.csv (copy its header row)"], []
     home = str((load_profile()[0] or {}).get("state") or "").strip().upper()
-    problems, warnings, verified = validate_rate_rows(rows, year, home)
-    if re.fullmatch(r"[A-Z]{2}", home) and home not in verified:
-        warnings.append(f"{STATE_RATES.name}: no verified {home} rows for {year}; look them up (AGENTS.md, Look it up)")
-    return problems, warnings
+    # A row of yours replaces the project row for the same state, year, filing status, item and bracket start.
+    ours = {rate_key(r) for r in mine}
+    p1, w1, v1 = validate_rate_rows([r if rate_key(r) not in ours else {"Tax Year": ""} for r in rows], year, home, name=STATE_RATES_TEMPLATE.name)
+    p2, w2, v2 = validate_rate_rows(mine, year, home)
+    if re.fullmatch(r"[A-Z]{2}", home) and home not in v1 | v2:
+        w2.append(f"state_tax_rates.csv: no verified {home} rows for {year}; look them up (AGENTS.md, Look it up)")
+    return p1 + p2, w1 + w2
+
+
+def rate_key(r):
+    return tuple((r.get(k) or "").strip().upper() for k in ("State", "Tax Year", "Filing Status", "Item", "From"))
 
 
 def validate_rate_rows(rows, year=None, home="", today=None, name=STATE_RATES.name):
@@ -587,8 +742,6 @@ def ensure_setup():
         cmd_init(argparse.Namespace(year=datetime.now().year))
     elif not PROFILE.exists():
         shutil.copyfile(ROOT / "templates" / "profile.yml", PROFILE)
-    if not STATE_RATES.exists():
-        shutil.copyfile(STATE_RATES_TEMPLATE, STATE_RATES)
     write_status()
 
 
@@ -790,6 +943,14 @@ def main():
     sp.add_argument("--notes", help="anything worth remembering")
     sp.add_argument("--by", default="assistant", help="who organized it (default: assistant)")
     sp.set_defaults(fn=cmd_organize)
+    sp = sub.add_parser("import", help="add expense rows from a favabooks export, skipping duplicates")
+    sp.add_argument("file", help="CSV in my_tax_files/inbox/ (or a path)")
+    sp.add_argument("year", type=int)
+    sp.add_argument("--dry-run", action="store_true", help="show what would be added; change nothing")
+    sp.add_argument("--keep-possible", action="store_true", help="also add rows that share a date and amount with another vendor's row")
+    sp.add_argument("--business", help="Business / Venture for rows without one (default: the name the ledgers already use)")
+    sp.add_argument("--by", default="assistant", help="who imported it (default: assistant)")
+    sp.set_defaults(fn=cmd_import)
     args = ap.parse_args()
     args.fn(args)
 
