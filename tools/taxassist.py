@@ -763,7 +763,7 @@ def cmd_serve(args):
     Host header (DNS rebinding) are rejected. On a headless server, reach it through an SSH
     tunnel; any local port works, because only the host name is checked.
 
-    --bind and --allow-host exist for docker-compose.yml, where Caddy adds HTTPS and a login in
+    --bind and --allow-host exist for docker-compose.yml, where Caddy adds a login in
     front and passes the browser's host name through. Never expose them without that proxy."""
     import getpass
     import http.server

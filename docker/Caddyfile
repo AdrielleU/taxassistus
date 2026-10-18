@@ -1,23 +1,26 @@
-# Used by docker-compose.yml. Settings come from .env; you shouldn't need to edit this.
+# Caddy in front of Tax Assist US (docker-compose.yml): the browser's login
+# popup, then everything passes through to taxassist, which has no login of
+# its own.
+#
+# login.sh starts it with the login from data/caddy/data/login.env
+# (TAXASSIST_LOGIN_USER and TAXASSIST_LOGIN_HASH, a bcrypt hash), and makes
+# one there on first start. Without them Caddy doesn't start, so Tax Assist
+# US is never served without the login.
 {
-	# Browsers send no server name (SNI) when TAXASSIST_DOMAIN is an IP address.
-	default_sni {$TAXASSIST_DOMAIN}
+	admin off
+	auto_https off
 }
 
-{$TAXASSIST_DOMAIN} {
-	# "internal" = Caddy's own certificate (LAN; browsers warn once). An email = Let's Encrypt.
-	tls {$TAXASSIST_TLS:internal}
-
+:80 {
 	basic_auth {
-		{$TAXASSIST_USER} {$TAXASSIST_PASSWORD_HASH}
+		{$TAXASSIST_LOGIN_USER} {$TAXASSIST_LOGIN_HASH}
 	}
 
 	header {
-		Strict-Transport-Security "max-age=31536000"
 		X-Frame-Options "DENY"
 		-Server
 	}
 
-	# Caddy keeps the browser's Host header, which taxassist.py checks against TAXASSIST_DOMAIN.
+	# Caddy keeps the browser's Host header, which taxassist.py checks against TAXASSIST_HOSTS.
 	reverse_proxy taxassist:8765
 }

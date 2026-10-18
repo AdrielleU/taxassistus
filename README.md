@@ -110,22 +110,18 @@ Add documents by copying them to the server's inbox: `scp *.pdf you@your-server:
 
 ### Docker server (shared, with a login)
 
-`docker-compose.yml` runs the same `serve` mode behind [Caddy](https://caddyserver.com), which adds **HTTPS and a password**, so people can open it from their own browsers without SSH. It works with Docker or Podman (`podman-compose`).
+`docker-compose.yml` runs the same `serve` mode behind [Caddy](https://caddyserver.com), which asks for a **username and password** (the browser's login popup), so people on your network can open it from their own browsers without SSH. It works with Podman (`podman-compose`) or Docker.
 
 **Everyone who logs in sees and edits the same `my_tax_files/`**: full documents, SSNs included. Use it for one household or one person's own devices, not for unrelated people. Give each household its own copy of the project and its own port.
 
-1. Copy the settings file and make a password hash:
-   ```bash
-   cp .env.example .env
-   docker run --rm docker.io/library/caddy:2.11.7-alpine caddy hash-password --plaintext 'a long passphrase'
-   ```
-2. Edit `.env`: `TAXASSIST_DOMAIN` (the name or LAN IP people will type), `TAXASSIST_USER`, and `TAXASSIST_PASSWORD_HASH` (in single quotes). `TAXASSIST_TLS=internal` uses Caddy's own certificate, so each browser warns once. Put an email address there instead for a real Let's Encrypt certificate (that needs public DNS and ports 80/443 open).
-3. Once per host, create the shared network and Caddy's folders: `podman network create network_container` (Docker: `docker network create network_container`) and `mkdir -p data/caddy/data data/caddy/config`.
-4. Start it with `podman-compose up -d` (or `docker compose up -d`), then open `https://<TAXASSIST_DOMAIN>/` (add `:<port>` if you changed `TAXASSIST_HTTPS_PORT`).
+1. `cp .env.example .env`, then set `TAXASSIST_HOSTS` to every name or IP people will type (the server's LAN IP, its host name), comma-separated, without the port. Rootless Podman: also set `TAXASSIST_UID=0` and `TAXASSIST_GID=0` (container root is your own user there, so files stay yours).
+2. Once per host, create the shared network and Caddy's folders: `podman network create network_container` (Docker: `docker network create network_container`) and `mkdir -p data/caddy/data data/caddy/config`.
+3. Start it with `podman-compose up -d` (or `docker compose up -d`), and get the login with `podman-compose logs taxassist-caddy`. On first start it makes user `admin` with a random password, prints it once, and keeps only its hash in `data/caddy/data/login.env`. For a new one, delete that file and run `podman-compose up -d` again.
+4. Open `http://<server IP>:17202/`. To use another port, change the first number of `"17202:80"` under `ports:` in `docker-compose.yml`. `"127.0.0.1:17202:80"` limits it to the server itself.
 
-It runs two containers, `taxassist` and `taxassist-caddy`. Both join the shared `network_container` used by the other stacks on the host; Caddy's certificates are in `data/caddy/` (git ignores it). How it's locked down: `taxassist` has no published port, so people reach it only through Caddy's login, and `data/` is hidden from it. Other containers on `network_container` can reach it directly, so keep only trusted stacks on that network. Its code is mounted read-only, with `my_tax_files/` as the only writable folder. It still refuses requests with any host name other than `TAXASSIST_DOMAIN`. Add documents with `scp` into `my_tax_files/inbox/`, and run your AI on the server in the project folder as usual. Stop it with `podman-compose down` (or `docker compose down`).
+It runs two containers, `taxassist` and `taxassist-caddy`. Both join the shared `network_container` used by the other stacks on the host. How it's locked down: `taxassist` has no published port, so people reach it only through Caddy's login, and `data/` (the login hash) is hidden from it. Other containers on `network_container` can reach it directly, so keep only trusted stacks on that network. Its code is mounted read-only, with `my_tax_files/` as the only writable folder, and it refuses host names not in `TAXASSIST_HOSTS`. Add documents with `scp` into `my_tax_files/inbox/`, and run your AI on the server in the project folder as usual. Stop it with `podman-compose down` (or `docker compose down`).
 
-**Rootless Podman** (the default on Fedora/RHEL): set `TAXASSIST_HTTP_PORT=8080`, `TAXASSIST_HTTPS_PORT=8443`, and `TAXASSIST_UID=0` / `TAXASSIST_GID=0` in `.env`. Container root is your own user there, so files stay yours. On a public server, prefer a VPN (WireGuard, Tailscale) over opening the port to the whole internet. A password is only one lock, and Caddy doesn't rate-limit login attempts.
+It's plain HTTP, so the password crosses your network unencrypted: fine on a home network you trust. From outside, use a VPN (WireGuard, Tailscale, NetBird) rather than opening the port to the internet. A password is only one lock, and Caddy doesn't rate-limit login attempts.
 
 ### What you need
 
@@ -200,7 +196,7 @@ Run it by hand from **Actions → State tax rates re-check → Run workflow**, o
 | Path | What it is | In git |
 |---|---|---|
 | `Start-TaxAssistUS_Windows.bat` / `_Mac.command` / `_Linux.sh` / `_LinuxServer.sh` | Launchers (desktop ones take `serve`) | yes |
-| `docker-compose.yml`, `docker/Caddyfile`, `.env.example` | Optional shared server: HTTPS + login in front of `serve` | yes (your `.env` never) |
+| `docker-compose.yml`, `docker/Caddyfile`, `docker/login.sh`, `.env.example` | Optional shared server: a login in front of `serve` | yes (your `.env` never) |
 | `TaxAssistUS.html` | The app (the five steps) | yes |
 | `AGENTS.md` + `CLAUDE.md`, `GEMINI.md`, `GROK.md` | Rules for AI assistants, and pointers to them | yes |
 | `guides/1_files.md` | Folder layout, file names, ledger columns, forms to collect, privacy | yes |
@@ -225,7 +221,7 @@ Run it by hand from **Actions → State tax rates re-check → Run workflow**, o
 | Uploads don't save into the folder | That needs Chrome or Edge (**Connect folder**). In other browsers, copy files into `my_tax_files/inbox/` |
 | `serve`: "Ports … are busy" | Another program is using them: `serve --port 9000` |
 | Linux server: the page won't load on your computer | Keep the `ssh -N -L …` command running, and use the same port it prints |
-| Docker: certificate error, connection refused, or 403 | Open it with exactly the `TAXASSIST_DOMAIN` name from `.env`; an IP or other name is refused |
+| Docker: connection refused, or 403 | Use the port from `ports:` in `docker-compose.yml` (default 17202), and a name or IP listed in `TAXASSIST_HOSTS` in `.env`; others are refused |
 | The estimate differs from your tax software | Find out why before filing: compare line by line (step 4, **Copy as text**), and ask your AI to review the differences |
 
 ## Contributing
