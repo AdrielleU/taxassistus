@@ -3,12 +3,12 @@
 #   podman network create network_container    # once per host, shared by every stack
 #   mkdir -p data/caddy/data data/caddy/config  # once
 #   podman-compose up -d    # Docker: docker compose up -d
-#   podman-compose logs taxassist-caddy         # first start: the login, printed once
-# then open http://<this server>:17202
+# then open http://<this server>:17202 and log in with TAXASSIST_LOGIN_USER and your password
 # Everyone who logs in sees and edits the SAME my_tax_files/. Stop: podman-compose down
 #
-# The login (user admin, random password) is made on first start and kept in
-# data/caddy/data/login.env. New one: delete that file and run podman-compose up -d.
+# The login is in .env: TAXASSIST_LOGIN_USER and TAXASSIST_LOGIN_HASH (a bcrypt hash; the
+# password itself is never stored). .env.example shows how to make the hash. Without them
+# compose refuses to start, so Tax Assist US is never served without the login.
 # It's plain HTTP: fine on the home network. From outside, use a VPN.
 #
 # Names: service = container_name = network alias, prefixed taxassist, so they don't
@@ -16,7 +16,7 @@
 #
 # Data stays in this folder (bind mounts, no named volumes), so a folder backup has it all:
 #   my_tax_files/        the tax files (private; git ignores it)
-#   data/caddy/data/     the login (login.env) and Caddy's state (private; git ignores it)
+#   data/caddy/data/     Caddy's state (private; git ignores it)
 #   data/caddy/config/   Caddy's autosaved config
 #
 # SELinux: lowercase :z (shared label) everywhere, because taxassist mounts the whole
@@ -44,7 +44,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp
-      # Empty, so serve can't publish the login hash in ./data. notmpcopyup is required:
+      # Empty, so serve can't publish Caddy's state in ./data. notmpcopyup is required:
       # Podman otherwise copies the folder's files into the tmpfs.
       - /app/data:notmpcopyup
     cap_drop: [ALL]
@@ -60,9 +60,7 @@ services:
     container_name: taxassist-caddy
     restart: unless-stopped
     depends_on: [taxassist]
-    # Reads the login from data/caddy/data/login.env, or makes one and saves it
-    # there; then starts Caddy with docker/Caddyfile.
-    entrypoint: ["/bin/sh", "/setup/login.sh", "/data/login.env", "/setup/Caddyfile"]
+    entrypoint: ["caddy", "run", "--config", "/setup/Caddyfile", "--adapter", "caddyfile"]
     ports:
       # The login page, for the local network: host port 17202 -> Caddy's 80.
       # Pick another host port by changing the first number. This machine only:
@@ -70,8 +68,11 @@ services:
       - "17202:80"
     environment:
       TZ: America/Phoenix
+      # The login, from .env (compose reads it on the host, so Caddy never gets the project folder)
+      TAXASSIST_LOGIN_USER: ${TAXASSIST_LOGIN_USER:?set TAXASSIST_LOGIN_USER in .env (see .env.example)}
+      TAXASSIST_LOGIN_HASH: ${TAXASSIST_LOGIN_HASH:?set TAXASSIST_LOGIN_HASH in .env (see .env.example)}
     volumes:
-      - ./docker:/setup:ro,z                  # login.sh and Caddyfile
+      - ./docker:/setup:ro,z                  # the Caddyfile
       - ./data/caddy/data:/data:z
       - ./data/caddy/config:/config:z
     networks:

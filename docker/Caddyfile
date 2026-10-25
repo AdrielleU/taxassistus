@@ -2,10 +2,9 @@
 # popup, then everything passes through to taxassist, which has no login of
 # its own.
 #
-# login.sh starts it with the login from data/caddy/data/login.env
-# (TAXASSIST_LOGIN_USER and TAXASSIST_LOGIN_HASH, a bcrypt hash), and makes
-# one there on first start. Without them Caddy doesn't start, so Tax Assist
-# US is never served without the login.
+# The login comes from .env (TAXASSIST_LOGIN_USER and TAXASSIST_LOGIN_HASH,
+# a bcrypt hash), passed in by docker-compose.yml. Without them compose
+# refuses to start, so Tax Assist US is never served without the login.
 {
 	admin off
 	auto_https off

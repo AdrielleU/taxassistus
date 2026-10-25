@@ -116,10 +116,11 @@ Add documents by copying them to the server's inbox: `scp *.pdf you@your-server:
 
 1. `cp .env.example .env`, then set `TAXASSIST_HOSTS` to every name or IP people will type (the server's LAN IP, its host name), comma-separated, without the port. Rootless Podman: also set `TAXASSIST_UID=0` and `TAXASSIST_GID=0` (container root is your own user there, so files stay yours).
 2. Once per host, create the shared network and Caddy's folders: `podman network create network_container` (Docker: `docker network create network_container`) and `mkdir -p data/caddy/data data/caddy/config`.
-3. Start it with `podman-compose up -d` (or `docker compose up -d`), and get the login with `podman-compose logs taxassist-caddy`. On first start it makes user `admin` with a random password, prints it once, and keeps only its hash in `data/caddy/data/login.env`. For a new one, delete that file and run `podman-compose up -d` again.
-4. Open `http://<server IP>:17202/`. To use another port, change the first number of `"17202:80"` under `ports:` in `docker-compose.yml`. `"127.0.0.1:17202:80"` limits it to the server itself.
+3. Set the login in `.env`: `TAXASSIST_LOGIN_USER` and `TAXASSIST_LOGIN_HASH`, a bcrypt hash of your password (the password itself is never stored). `.env.example` has the one command that makes it: paste it as is, type the password at the prompts, and copy the `TAXASSIST_LOGIN_HASH='$2a$14$...'` line it prints into `.env`, single quotes included. Without the login, compose refuses to start.
+4. Start it with `podman-compose up -d` (or `docker compose up -d`). To change the password later, make a new hash the same way and run `podman-compose up -d` again.
+5. Open `http://<server IP>:17202/` and log in. To use another port, change the first number of `"17202:80"` under `ports:` in `docker-compose.yml`. `"127.0.0.1:17202:80"` limits it to the server itself.
 
-It runs two containers, `taxassist` and `taxassist-caddy`. Both join the shared `network_container` used by the other stacks on the host. How it's locked down: `taxassist` has no published port, so people reach it only through Caddy's login, and `data/` (the login hash) is hidden from it. Other containers on `network_container` can reach it directly, so keep only trusted stacks on that network. Its code is mounted read-only, with `my_tax_files/` as the only writable folder, and it refuses host names not in `TAXASSIST_HOSTS`. Add documents with `scp` into `my_tax_files/inbox/`, and run your AI on the server in the project folder as usual. Stop it with `podman-compose down` (or `docker compose down`).
+It runs two containers, `taxassist` and `taxassist-caddy`. Both join the shared `network_container` used by the other stacks on the host. How it's locked down: `taxassist` has no published port, so people reach it only through Caddy's login, and `data/` (Caddy's state) is hidden from it. Other containers on `network_container` can reach it directly, so keep only trusted stacks on that network. Its code is mounted read-only, with `my_tax_files/` as the only writable folder, and it refuses host names not in `TAXASSIST_HOSTS`. Add documents with `scp` into `my_tax_files/inbox/`, and run your AI on the server in the project folder as usual. Stop it with `podman-compose down` (or `docker compose down`).
 
 It's plain HTTP, so the password crosses your network unencrypted: fine on a home network you trust. From outside, use a VPN (WireGuard, Tailscale, NetBird) rather than opening the port to the internet. A password is only one lock, and Caddy doesn't rate-limit login attempts.
 
@@ -196,7 +197,7 @@ Run it by hand from **Actions → State tax rates re-check → Run workflow**, o
 | Path | What it is | In git |
 |---|---|---|
 | `Start-TaxAssistUS_Windows.bat` / `_Mac.command` / `_Linux.sh` / `_LinuxServer.sh` | Launchers (desktop ones take `serve`) | yes |
-| `docker-compose.yml`, `docker/Caddyfile`, `docker/login.sh`, `.env.example` | Optional shared server: a login in front of `serve` | yes (your `.env` never) |
+| `docker-compose.yml`, `docker/Caddyfile`, `.env.example` | Optional shared server: a login in front of `serve` | yes (your `.env` never) |
 | `TaxAssistUS.html` | The app (the five steps) | yes |
 | `AGENTS.md` + `CLAUDE.md`, `GEMINI.md`, `GROK.md` | Rules for AI assistants, and pointers to them | yes |
 | `guides/1_files.md` | Folder layout, file names, ledger columns, forms to collect, privacy | yes |
