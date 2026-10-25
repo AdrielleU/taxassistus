@@ -40,15 +40,15 @@ services:
     tmpfs: [/tmp]
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    # No published port: people reach it through taxassist-caddy's login. Other containers
+    # No published port: people reach it through taxassist-login's login. Other containers
     # on network_container can reach it directly, so only run trusted stacks there.
     networks:
       network_container:
         aliases: [taxassist]
 
-  taxassist-caddy:
+  taxassist-login:
     image: docker.io/library/caddy:2.11.7-alpine
-    container_name: taxassist-caddy
+    container_name: taxassist-login
     restart: unless-stopped
     depends_on: [taxassist]
     environment:
@@ -71,7 +71,7 @@ services:
     security_opt: ["no-new-privileges:true"]
     networks:
       network_container:
-        aliases: [taxassist-caddy]
+        aliases: [taxassist-login]
 
 networks:
   network_container:
