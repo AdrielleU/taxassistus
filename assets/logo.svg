@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 300" role="img" aria-label="Tax Assist US">
+  <!-- The mark (icon.svg) and the name. Colors: Old Glory Blue #0A3161, Old Glory Red #B31942. -->
+  <g transform="translate(18 18) scale(0.515)">
+    <circle cx="256" cy="256" r="244" fill="#0A3161"/>
+    <circle cx="256" cy="256" r="214" fill="none" stroke="#FFFFFF" stroke-width="8" opacity="0.9"/>
+    <path d="M132 268 L216 350 L338 200" fill="none" stroke="#FFFFFF" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/>
+    <path transform="translate(372 160) rotate(-12)" fill="#B31942" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="round"
+          d="M0,-62 L14.6,-20.1 L59,-19.2 L23.6,7.7 L36.4,50.2 L0,24.8 L-36.4,50.2 L-23.6,7.7 L-59,-19.2 L-14.6,-20.1 Z"/>
+  </g>
+  <text x="310" y="192" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="128" font-weight="800" letter-spacing="-3" fill="#0A3161">TaxAssist<tspan fill="#B31942">US</tspan></text>
+</svg>

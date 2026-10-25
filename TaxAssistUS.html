@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tax Assist US</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' role='img' aria-label='Tax Assist US'%3E %3Ccircle cx='256' cy='256' r='244' fill='%230A3161'/%3E %3Ccircle cx='256' cy='256' r='214' fill='none' stroke='%23FFFFFF' stroke-width='8' opacity='0.9'/%3E %3Cpath d='M132 268 L216 350 L338 200' fill='none' stroke='%23FFFFFF' stroke-width='50' stroke-linecap='round' stroke-linejoin='round'/%3E %3Cpath transform='translate(372 160) rotate(-12)' fill='%23B31942' stroke='%23FFFFFF' stroke-width='10' stroke-linejoin='round' d='M0,-62 L14.6,-20.1 L59,-19.2 L23.6,7.7 L36.4,50.2 L0,24.8 L-36.4,50.2 L-23.6,7.7 L-59,-19.2 L-14.6,-20.1 Z'/%3E %3C/svg%3E">
 <style>
 :root{
   --bg:#fff;--fg:#1a1d21;--muted:#5b6470;--line:#dfe3e8;--head:#f4f6f8;--accent:#1f5fae;--note:#f6f8fb;--surface:#fcfcfb;
@@ -39,6 +40,7 @@ textarea{min-height:76px;resize:vertical}
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
 header .in{max-width:1240px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
 .brand{display:flex;align-items:baseline;gap:8px;margin-right:auto}
+.brand .mark{width:26px;height:26px;flex:none;align-self:center}
 .brand b{font-size:17px}.brand b span{color:var(--accent)}
 .brand small{color:var(--muted);font-size:12px}
 .steps{display:flex;gap:2px;overflow-x:auto;list-style:none;margin:0;padding:0;order:3;width:100%}
@@ -313,7 +315,7 @@ tr.zero td{color:var(--muted)}
 <script src="tools/tax_engine.js"></script>
 
 <header><div class="in">
-  <div class="brand"><b>Tax Assist <span>US</span></b><small>tax assistance for us</small></div>
+  <div class="brand"><svg class="mark" viewBox="0 0 512 512" aria-hidden="true"><circle cx="256" cy="256" r="244" fill="#0A3161"/> <circle cx="256" cy="256" r="214" fill="none" stroke="#FFFFFF" stroke-width="8" opacity="0.9"/> <path d="M132 268 L216 350 L338 200" fill="none" stroke="#FFFFFF" stroke-width="50" stroke-linecap="round" stroke-linejoin="round"/> <path transform="translate(372 160) rotate(-12)" fill="#B31942" stroke="#FFFFFF" stroke-width="10" stroke-linejoin="round" d="M0,-62 L14.6,-20.1 L59,-19.2 L23.6,7.7 L36.4,50.2 L0,24.8 L-36.4,50.2 L-23.6,7.7 L-59,-19.2 L-14.6,-20.1 Z"/></svg><b>Tax Assist <span>US</span></b><small>tax assistance for us</small></div>
   <ol class="steps" id="steps"></ol>
   <button type="button" class="up" id="headUpload">Upload files <span class="badge" id="badge" hidden></span></button>
 </div></header>

@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.svg" alt="TaxAssistUS" width="420"></p>
+
 # TaxAssistUS
 
 **Use AI to get your United States of America (US) taxes right, and see your estimate before you pay.** For single filers, married couples, and anyone with an LLC, several LLCs, or 1099 side work.
