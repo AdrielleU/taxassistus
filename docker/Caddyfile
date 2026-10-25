@@ -1,6 +1,6 @@
 # Caddy in front of Tax Assist US (docker-compose.yml): the browser's login
 # popup, then everything passes through to taxassist, which has no login of
-# its own.
+# its own. Built into the image as /etc/caddy/Caddyfile.
 #
 # The login comes from .env (TAXASSIST_LOGIN_USER and TAXASSIST_LOGIN_HASH,
 # a bcrypt hash), passed in by docker-compose.yml. Without them compose
@@ -10,7 +10,8 @@
 	auto_https off
 }
 
-:80 {
+# Port 8080 inside the container: it runs as a plain user, which can't use port 80.
+:8080 {
 	basic_auth {
 		{$TAXASSIST_LOGIN_USER} {$TAXASSIST_LOGIN_HASH}
 	}
@@ -21,5 +22,5 @@
 	}
 
 	# Caddy keeps the browser's Host header, which taxassist.py checks against TAXASSIST_HOSTS.
-	reverse_proxy taxassist:8765
+	reverse_proxy {$TAXASSIST_UPSTREAM:taxassist:8765}
 }

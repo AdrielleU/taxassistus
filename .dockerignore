@@ -1,0 +1,17 @@
+# Only what the Dockerfile copies goes in; above all never tax files, .env or the login.
+*
+!AGENTS.md
+!CLAUDE.md
+!GEMINI.md
+!GROK.md
+!README.md
+!LICENSE
+!TaxAssistUS.html
+!state_tax_rates.csv
+!assets/
+!guides/
+!templates/
+!tools/
+!docker/Caddyfile
+**/__pycache__
+**/*.pyc
