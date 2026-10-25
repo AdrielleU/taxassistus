@@ -12,6 +12,5 @@
 !guides/
 !templates/
 !tools/
-!docker/Caddyfile
 **/__pycache__
 **/*.pyc

@@ -1,6 +1,7 @@
 # Tax Assist US as a shared server: Caddy (login popup) in front of `taxassist.py serve`.
-# Both run from one image, ghcr.io/adrielleu/taxassistus (Dockerfile; published per version tag),
-# so this file and .env are all a server needs:
+# The app is the image ghcr.io/adrielleu/taxassistus (Dockerfile; published per version tag), the
+# login is the official Caddy image with docker/Caddyfile, so a server needs this file, .env and
+# docker/Caddyfile:
 #   cp .env.example .env    # then set TAXASSIST_HOSTS and the login (see .env.example)
 #   podman network create network_container    # once per host, shared by every stack
 #   podman-compose up -d    # Docker: docker compose up -d
@@ -23,11 +24,9 @@
 # Caddy keeps nothing worth saving (no certificates, no admin API), so its folders are in memory.
 name: taxassist
 
-x-image: &image ghcr.io/adrielleu/taxassistus:${TAXASSIST_TAG:-latest}
-
 services:
   taxassist:
-    image: *image
+    image: ghcr.io/adrielleu/taxassistus:${TAXASSIST_TAG:-latest}
     container_name: taxassist
     restart: unless-stopped
     environment:
@@ -48,25 +47,27 @@ services:
         aliases: [taxassist]
 
   taxassist-caddy:
-    image: *image
+    image: docker.io/library/caddy:2.11.7-alpine
     container_name: taxassist-caddy
     restart: unless-stopped
     depends_on: [taxassist]
-    # The same image, running only Caddy with its built-in Caddyfile; no tax files mounted.
-    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
     environment:
       TZ: America/Phoenix
       # The login, from .env
       TAXASSIST_LOGIN_USER: ${TAXASSIST_LOGIN_USER:?set TAXASSIST_LOGIN_USER in .env (see .env.example)}
       TAXASSIST_LOGIN_HASH: ${TAXASSIST_LOGIN_HASH:?set TAXASSIST_LOGIN_HASH in .env (see .env.example)}
     ports:
-      # The login page, for the local network: host port 17202 -> Caddy's 8080.
+      # The login page, for the local network: host port 17202 -> Caddy's 80.
       # Pick another host port by changing the first number. This machine only:
-      # "127.0.0.1:17202:8080".
-      - "17202:8080"
+      # "127.0.0.1:17202:80".
+      - "17202:80"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro,z   # the only file it gets: no tax files
     read_only: true
-    tmpfs: ["/data:mode=1777", "/config:mode=1777", /tmp]
+    tmpfs: [/data, /config, /tmp]
     cap_drop: [ALL]
+    # The one power it keeps: port 80 (the official caddy binary asks for it and won't start without)
+    cap_add: [NET_BIND_SERVICE]
     security_opt: ["no-new-privileges:true"]
     networks:
       network_container:

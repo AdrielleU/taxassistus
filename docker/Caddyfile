@@ -1,6 +1,6 @@
 # Caddy in front of Tax Assist US (docker-compose.yml): the browser's login
 # popup, then everything passes through to taxassist, which has no login of
-# its own. Built into the image as /etc/caddy/Caddyfile.
+# its own. Mounted into the official Caddy image as /etc/caddy/Caddyfile.
 #
 # The login comes from .env (TAXASSIST_LOGIN_USER and TAXASSIST_LOGIN_HASH,
 # a bcrypt hash), passed in by docker-compose.yml. Without them compose
@@ -10,8 +10,7 @@
 	auto_https off
 }
 
-# Port 8080 inside the container: it runs as a plain user, which can't use port 80.
-:8080 {
+:80 {
 	basic_auth {
 		{$TAXASSIST_LOGIN_USER} {$TAXASSIST_LOGIN_HASH}
 	}
